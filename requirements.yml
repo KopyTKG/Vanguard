@@ -1,0 +1,9 @@
+---
+# Ansible Galaxy dependencies. Install with: `just deps` (or `mise run setup`).
+collections:
+  # Provides community.general.timezone.
+  - name: community.general
+    version: ">=9.0.0"
+  # Provides ansible.posix.authorized_key.
+  - name: ansible.posix
+    version: ">=1.5.0"

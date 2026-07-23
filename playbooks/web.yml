@@ -1,0 +1,18 @@
+---
+# Install the `web` group's apps. Run: `just install web`
+# Template — swap in whatever the web clients actually run.
+- name: Install web apps
+  hosts: web
+  become: true
+
+  tasks:
+    - name: Install web packages
+      ansible.builtin.apt:
+        name: "{{ web_packages }}"
+        state: present
+
+    - name: Ensure nginx is running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true

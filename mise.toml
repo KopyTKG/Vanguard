@@ -1,0 +1,16 @@
+[tools]
+python = "3.13"
+
+[env]
+# Auto-create/activate a repo-local venv so Ansible + the Proxmox client libs
+# stay isolated to this project.
+_.python.venv = { path = ".venv", create = true }
+# Keep Ansible reading this repo's config regardless of CWD.
+ANSIBLE_CONFIG = "{{ config_root }}/ansible.cfg"
+
+[tasks.setup]
+description = "Create the venv and install all Python + Galaxy dependencies"
+run = [
+  "pip install ansible",
+  "ansible-galaxy install -r requirements.yml",
+]

@@ -1,0 +1,73 @@
+---
+# The shared baseline every client gets. Run: `just baseline`
+- name: Baseline
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Update and upgrade apt
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        upgrade: dist
+
+    - name: Install baseline packages
+      ansible.builtin.apt:
+        name: "{{ baseline_packages }}"
+        state: present
+
+    - name: Enable unattended-upgrades
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        mode: "0644"
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+
+    - name: Ensure fish is a valid login shell
+      ansible.builtin.lineinfile:
+        path: /etc/shells
+        line: /usr/bin/fish
+
+    - name: Set fish as root's default shell
+      ansible.builtin.user:
+        name: root
+        shell: /usr/bin/fish
+
+    # mise via the official apt repo (extrepo enables it declaratively).
+    - name: Install extrepo
+      ansible.builtin.apt:
+        name: extrepo
+        state: present
+
+    - name: Enable the mise apt repo
+      ansible.builtin.command: extrepo enable mise
+      args:
+        creates: /etc/apt/sources.list.d/extrepo_mise.sources
+
+    - name: Install mise
+      ansible.builtin.apt:
+        name: mise
+        state: present
+        update_cache: true
+
+    - name: Ensure fish config dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish
+        state: directory
+        mode: "0755"
+
+    - name: Activate mise in fish
+      ansible.builtin.lineinfile:
+        path: /root/.config/fish/config.fish
+        line: "mise activate fish | source"
+        create: true
+        mode: "0644"

@@ -1,0 +1,18 @@
+---
+# Shared config + connection for every client, regardless of group.
+ansible_host: hosting.thekrew.app
+ansible_user: root
+
+# Each client has its own key pair; by convention the private key is at
+# ~/.ssh/vanguard/<client-name>. Override per host in host_vars if needed.
+ansible_ssh_private_key_file: "~/.ssh/vanguard/{{ inventory_hostname }}"
+
+timezone: Europe/Prague
+
+# Packages every client gets.
+baseline_packages:
+  - sudo
+  - curl
+  - vim
+  - unattended-upgrades
+  - fish

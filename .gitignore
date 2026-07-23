@@ -1,0 +1,17 @@
+# Python venv (managed by mise)
+.venv/
+
+# Ansible
+*.retry
+.ansible/
+collections/ansible_collections/
+
+# Vault password file — NEVER commit this
+.vault_pass
+
+# mise local overrides
+mise.local.toml
+
+# Editor / OS
+.DS_Store
+*.swp

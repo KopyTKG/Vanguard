@@ -1,0 +1,27 @@
+---
+# Clients grouped by the app they run. All share host hosting.thekrew.app
+# (set in group_vars/all.yml) and differ by SSH port.
+#
+# Baseline runs on every client; each group gets its own install playbook
+# (playbooks/<group>.yml) and its own vars (group_vars/<group>.yml).
+
+generic:
+  hosts:
+    esl: { ansible_port: 2225 }
+    vpn: { ansible_port: 2200 }
+    allthemons: { ansible_port: 2204 }
+    kuma: { ansible_port: 2205 }
+    grafana: { ansible_port: 2206 }
+    proxy: { ansible_port: 2207 }
+
+web:
+  hosts:
+    worldle-web: { ansible_port: 2203 }
+
+csharp:
+  hosts:
+    worldle-api: { ansible_port: 2202 }
+
+postgress:
+  hosts:
+    worldle-db: { ansible_port: 2201 }

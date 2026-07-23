@@ -1,0 +1,4 @@
+---
+# Vars for the `web` group. Consumed by playbooks/web.yml.
+web_packages:
+  - nginx

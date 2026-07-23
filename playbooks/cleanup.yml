@@ -1,0 +1,29 @@
+---
+# One-off cleanup: remove the kopy user and chrony that earlier runs added.
+# Run: `ansible-playbook playbooks/cleanup.yml`
+- name: Remove kopy user and chrony
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Remove kopy user and its home
+      ansible.builtin.user:
+        name: kopy
+        state: absent
+        remove: true
+
+    - name: Remove kopy sudoers file
+      ansible.builtin.file:
+        path: /etc/sudoers.d/90-kopy
+        state: absent
+
+    - name: Purge chrony
+      ansible.builtin.apt:
+        name: chrony
+        state: absent
+        purge: true
+
+    - name: Remove leftover chrony config
+      ansible.builtin.file:
+        path: /etc/chrony/conf.d/cesnet.conf
+        state: absent
