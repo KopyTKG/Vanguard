@@ -11,6 +11,7 @@ ANSIBLE_CONFIG = "{{ config_root }}/ansible.cfg"
 [tasks.setup]
 description = "Create the venv and install all Python + Galaxy dependencies"
 run = [
-  "pip install ansible",
+  # passlib backs the password_hash filter — Python 3.13 dropped stdlib crypt.
+  "pip install ansible passlib",
   "ansible-galaxy install -r requirements.yml",
 ]

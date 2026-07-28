@@ -1,0 +1,105 @@
+---
+# Install SteamCMD and the dedicated servers each client is configured to run.
+# Run: `just install steamcmd`
+#
+# Clients list games by slug in `steam_games` (see host_vars/<client>.yml); the
+# slugs resolve against vars/steam_apps.yml, the catalog scraped from Valve's
+# Dedicated Servers List.
+- name: Install SteamCMD servers
+  hosts: steamcmd
+  become: true
+
+  vars_files:
+    - ../vars/steam_apps.yml
+
+  tasks:
+    - name: Resolve the configured games against the app catalog
+      ansible.builtin.set_fact:
+        steam_catalog: "{{ steam_apps | combine(steam_apps_extra) }}"
+
+    - name: Check every configured game is a known slug
+      ansible.builtin.assert:
+        that: steam_games | difference(steam_catalog.keys() | list) | length == 0
+        fail_msg: >-
+          Unknown steam_games entries:
+          {{ steam_games | difference(steam_catalog.keys() | list) | join(', ') }}.
+          Pick a slug from vars/steam_apps.yml, or define it in steam_apps_extra.
+        quiet: true
+
+    - name: Build the install list
+      ansible.builtin.set_fact:
+        steam_resolved: "{{ steam_resolved | default([]) + [steam_catalog[item] | combine({'slug': item})] }}"
+      loop: "{{ steam_games }}"
+
+    # SteamCMD can only pull these with an account that owns the game, which
+    # this playbook has no way to log in as — better to say so than to sit on a
+    # failing download.
+    - name: Check no game needs a Steam account we don't have
+      ansible.builtin.assert:
+        that: item.anonymous or steam_login != 'anonymous'
+        fail_msg: >-
+          {{ item.slug }} (appid {{ item.appid }}) can't be installed anonymously —
+          set steam_login to an account that owns it.
+        quiet: true
+      loop: "{{ steam_resolved }}"
+      loop_control:
+        label: "{{ item.slug }}"
+
+    - name: Install SteamCMD dependencies
+      ansible.builtin.apt:
+        name: "{{ steamcmd_packages }}"
+        state: present
+
+    - name: Create the steam user
+      ansible.builtin.user:
+        name: "{{ steam_user }}"
+        home: "{{ steam_home }}"
+        create_home: true
+        shell: /bin/bash
+        groups: sudo
+        append: true
+        # Fixed salt, otherwise the hash changes every run and so does the task.
+        password: "{{ steam_password | password_hash('sha512', steam_user) }}"
+
+    # Everything below is the manual install from the Valve docs, run as the
+    # steam user rather than root.
+    - name: Set up SteamCMD as the steam user
+      become_user: "{{ steam_user }}"
+      block:
+        - name: Create the SteamCMD directory
+          ansible.builtin.file:
+            path: "{{ steam_home }}/Steam"
+            state: directory
+            mode: "0755"
+
+        - name: Download and extract SteamCMD
+          ansible.builtin.unarchive:
+            src: https://client-update.steamstatic.com/installer/steamcmd_linux.tar.gz
+            dest: "{{ steam_home }}/Steam"
+            remote_src: true
+            creates: "{{ steam_home }}/Steam/steamcmd.sh"
+
+        - name: Install the game install/update script
+          ansible.builtin.template:
+            src: steamcmd-install.sh.j2
+            dest: "{{ steam_home }}/steamcmd-install.sh"
+            mode: "0755"
+
+        # Skipped once a game's app manifest exists, so a re-run of the playbook
+        # doesn't re-download it. To pull an update, run the script by hand:
+        #   sudo -iu steam ./steamcmd-install.sh <slug>
+        - name: Install the configured games
+          ansible.builtin.command: "{{ steam_home }}/steamcmd-install.sh {{ item.slug }}"
+          args:
+            creates: "{{ steam_home }}/{{ item.slug }}/steamapps/appmanifest_{{ item.appid }}.acf"
+          loop: "{{ steam_resolved }}"
+          loop_control:
+            label: "{{ item.slug }}"
+
+    - name: Note the games that ship Windows binaries only
+      ansible.builtin.debug:
+        msg: >-
+          {{ steam_resolved | selectattr('platform', 'eq', 'windows') | map(attribute='slug') | join(', ') }}
+          installed as Windows builds (SteamCMD platform override) — they need
+          Proton or Wine to actually run; this playbook only installs them.
+      when: steam_resolved | selectattr('platform', 'eq', 'windows') | list | length > 0

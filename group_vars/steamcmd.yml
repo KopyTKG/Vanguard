@@ -1,0 +1,30 @@
+---
+# Vars for the `steamcmd` group. Consumed by playbooks/steamcmd.yml.
+steam_user: steam
+steam_home: "/home/{{ steam_user }}"
+
+# Login password for the steam user (it's also in the sudo group).
+# TODO: move into an Ansible vault before this repo goes anywhere public —
+# ansible.cfg already has the vault_password_file line ready to uncomment.
+steam_password: heslo123
+
+steamcmd_packages:
+  # 32-bit runtime SteamCMD needs on Debian/Ubuntu x86-64.
+  # On Enterprise Linux this would be glibc.i686 + libstdc++.i686 instead.
+  - lib32gcc-s1
+  # Lets Ansible hand its temp files to the unprivileged steam user.
+  - acl
+
+# Steam account used for downloads. Most dedicated servers allow anonymous;
+# the ones marked `anonymous: false` in the catalog need a real account that
+# owns the game, and the playbook refuses to install those until this changes.
+steam_login: anonymous
+
+# Games to install, by slug from vars/steam_apps.yml. Each one installs into
+# {{ steam_home }}/<slug>. Set per client in host_vars/<client>.yml.
+steam_games: []
+
+# Servers missing from the catalog, in the same shape:
+#   steam_apps_extra:
+#     my-game: { appid: 123456, platform: linux, anonymous: true }
+steam_apps_extra: {}

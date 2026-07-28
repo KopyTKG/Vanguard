@@ -1,0 +1,160 @@
+---
+# Catalog of every dedicated server SteamCMD can install, generated from the
+# Valve wiki's Dedicated Servers List:
+#   https://developer.valvesoftware.com/wiki/Dedicated_Servers_List
+#
+# Referenced by slug from `steam_games` (see host_vars/<client>.yml).
+#   platform   linux | windows | any — `windows` needs SteamCMD's platform
+#              override, and the server itself needs Proton/Wine to run.
+#   anonymous  false means SteamCMD needs a real Steam account that owns the
+#              game; playbooks/steamcmd.yml refuses to install those anonymously.
+#   config     extra +app_set_config passed before app_update (GoldSrc mods).
+#
+# Mare Nostrum is omitted: the wiki lists its AppID as "?".
+# Anything else missing can be added per client via `steam_apps_extra`.
+steam_apps:
+  7-days-to-die: { appid: 294420, platform: any, anonymous: false }  # Game purchase required
+  age-of-chivalry: { appid: 17515, platform: windows, anonymous: true }
+  alien-swarm: { appid: 635, platform: windows, anonymous: false }  # Windows version only.
+  alien-swarm-reactive-drop: { appid: 582400, platform: windows, anonymous: true }  # Windows version only. Can run on Linux using Wine.
+  aliens-vs-predator: { appid: 34120, platform: windows, anonymous: false }
+  america-s-army-3: { appid: 13180, platform: windows, anonymous: false }
+  america-s-army-3-dedicated-server-beta: { appid: 13160, platform: windows, anonymous: false }
+  america-s-army-proving-grounds: { appid: 203300, platform: windows, anonymous: false }
+  american-truck-simulator: { appid: 2239530, platform: any, anonymous: true }
+  ark-survival-evolved: { appid: 376030, platform: any, anonymous: false }
+  ark-survival-of-the-fittest: { appid: 445400, platform: windows, anonymous: false }
+  arma-2: { appid: 33905, platform: windows, anonymous: false }
+  arma-2-operation-arrowhead: { appid: 33935, platform: windows, anonymous: false }
+  arma-3: { appid: 233780, platform: any, anonymous: false }  # Game Purchase Required
+  assetto-corsa: { appid: 302550, platform: windows, anonymous: false }
+  astroneer: { appid: 728470, platform: windows, anonymous: true }
+  barotrauma: { appid: 1026340, platform: linux, anonymous: true }
+  black-mesa-deathmatch: { appid: 346680, platform: any, anonymous: true }  # Downloading on Steam GUI client requires game purchase.
+  blade-symphony: { appid: 228780, platform: any, anonymous: false }  # Game Purchase Required
+  blazerush: { appid: 332850, platform: any, anonymous: true }
+  brainbread-2: { appid: 475370, platform: any, anonymous: false }
+  breach: { appid: 72310, platform: windows, anonymous: false }
+  brink: { appid: 72780, platform: windows, anonymous: false }
+  call-of-duty-modern-warfare-3: { appid: 42750, platform: windows, anonymous: false }
+  capsa: { appid: 667230, platform: windows, anonymous: false }
+  chivalry-deadliest-warrior: { appid: 258680, platform: windows, anonymous: false }
+  chivalry-medieval-warfare: { appid: 220070, platform: any, anonymous: true }
+  conan-exiles: { appid: 443030, platform: windows, anonymous: true }
+  contagion: { appid: 238430, platform: windows, anonymous: false }  # Windows server only
+  counter-strike: { appid: 90, platform: linux, anonymous: true }
+  counter-strike-1-6: { appid: 90, platform: windows, anonymous: true }
+  counter-strike-condition-zero: { appid: 90, platform: any, anonymous: true, config: "90 mod czero" }
+  counter-strike-global-offensive: { appid: 740, platform: any, anonymous: true }  # Login for public server
+  counter-strike-source: { appid: 232330, platform: any, anonymous: true }
+  d-i-p-r-i-p: { appid: 17535, platform: windows, anonymous: true }
+  dark-horizons-mechanized-corps: { appid: 312070, platform: linux, anonymous: true }
+  dark-messiah-of-might-and-magic: { appid: 2145, platform: windows, anonymous: false }
+  darkest-hour: { appid: 1290, platform: windows, anonymous: false }
+  day-of-defeat: { appid: 90, platform: any, anonymous: true, config: "90 mod dod" }
+  day-of-defeat-source: { appid: 232290, platform: any, anonymous: true }
+  day-of-infamy: { appid: 462310, platform: any, anonymous: true }
+  dayz: { appid: 223350, platform: windows, anonymous: false }
+  deathmatch-classic: { appid: 90, platform: any, anonymous: true, config: "90 mod dmc" }
+  dino-d-day: { appid: 70010, platform: windows, anonymous: false }
+  don-t-starve-together: { appid: 343050, platform: linux, anonymous: true }
+  dota-2: { appid: 570, platform: linux, anonymous: false }
+  double-action: { appid: 317800, platform: windows, anonymous: true }
+  dystopia: { appid: 17585, platform: windows, anonymous: true }
+  e-y-e: { appid: 91720, platform: windows, anonymous: false }
+  eco: { appid: 739590, platform: windows, anonymous: true }
+  eden-star: { appid: 419790, platform: windows, anonymous: true }
+  empires: { appid: 460040, platform: windows, anonymous: true }
+  enshrouded: { appid: 2278520, platform: windows, anonymous: true }
+  eternal-silence: { appid: 17555, platform: windows, anonymous: true }
+  euro-truck-simulator-2: { appid: 1948160, platform: any, anonymous: true }
+  fistful-of-frags-server: { appid: 295230, platform: any, anonymous: true }
+  fortress-forever: { appid: 329710, platform: windows, anonymous: true }
+  garry-s-mod: { appid: 4020, platform: any, anonymous: true }
+  gtr-evolution-demo: { appid: 8730, platform: windows, anonymous: false }
+  half-life: { appid: 90, platform: any, anonymous: true }
+  half-life-2-deathmatch: { appid: 232370, platform: any, anonymous: true }
+  half-life-deathmatch-source: { appid: 255470, platform: any, anonymous: true }
+  half-life-opposing-force: { appid: 90, platform: windows, anonymous: true, config: "90 mod gearbox" }
+  half-life-opposing-force-server: { appid: 90, platform: linux, anonymous: true, config: "90 mod gearbox" }
+  homefront: { appid: 55280, platform: windows, anonymous: false }
+  hurtworld: { appid: 405100, platform: any, anonymous: true }  # Bat file for server.
+  icarus: { appid: 2089300, platform: windows, anonymous: true }
+  insurgency: { appid: 237410, platform: windows, anonymous: true }
+  insurgency-2014: { appid: 237410, platform: linux, anonymous: true }
+  insurgency-modern-infantry-combat: { appid: 17705, platform: any, anonymous: true }
+  insurgency-sandstorm: { appid: 581330, platform: windows, anonymous: true }
+  jbmod: { appid: 2181210, platform: windows, anonymous: true }
+  just-cause-2-multiplayer: { appid: 261140, platform: any, anonymous: true }
+  killing-floor-2: { appid: 232130, platform: linux, anonymous: true }
+  killing-floor-2-dedicated-server-windows: { appid: 232130, platform: windows, anonymous: true }
+  killing-floor-beta: { appid: 1273, platform: windows, anonymous: false }
+  killing-floor-dedicated-server-linux: { appid: 215360, platform: linux, anonymous: false }  # Please create a new account or use a pre-existing one, account doesn't need to own the game; or else you will get the dreaded "ERROR! Failed to install app '215360' (No subscription)"
+  killing-floor-dedicated-server-windows: { appid: 215350, platform: windows, anonymous: false }  # Please create a new account or use a pre-existing one, account doesn't need to own the game; or else you will get the dreaded "ERROR! Failed to install app '215360' (No subscription)"
+  kingdoms-rise: { appid: 265360, platform: windows, anonymous: true }
+  lambda-wars: { appid: 319060, platform: windows, anonymous: false }
+  left-4-dead: { appid: 222840, platform: any, anonymous: true }
+  left-4-dead-2: { appid: 222860, platform: any, anonymous: true }
+  life-is-feudal-your-own: { appid: 320850, platform: windows, anonymous: true }
+  military-conflict-vietnam: { appid: 1136190, platform: windows, anonymous: true }
+  mod-and-play: { appid: 1301040, platform: windows, anonymous: true }
+  monday-night-combat: { appid: 63220, platform: windows, anonymous: false }
+  natural-selection-2: { appid: 4940, platform: any, anonymous: false }
+  neotokyo: { appid: 313600, platform: windows, anonymous: true }
+  nexuiz: { appid: 96810, platform: windows, anonymous: false }
+  no-more-room-in-hell: { appid: 317670, platform: any, anonymous: false }
+  ns2-combat: { appid: 313900, platform: any, anonymous: true }
+  nuclear-dawn: { appid: 111710, platform: windows, anonymous: true }
+  out-of-reach: { appid: 406800, platform: any, anonymous: true }
+  painkiller-hell-and-damnation: { appid: 230030, platform: windows, anonymous: false }
+  palworld: { appid: 2394010, platform: windows, anonymous: true }
+  pirates-vikings-and-knights-ii: { appid: 17575, platform: any, anonymous: true }
+  primal-carnage: { appid: 224620, platform: windows, anonymous: false }
+  project-zomboid: { appid: 108600, platform: any, anonymous: false }  # Game Purchase Required
+  quake-2: { appid: 2320, platform: linux, anonymous: true }
+  quake-live: { appid: 349090, platform: linux, anonymous: true }
+  race-07: { appid: 8610, platform: windows, anonymous: false }
+  race-07-demo: { appid: 4270, platform: windows, anonymous: false }
+  race-07-demo-crowne-plaza-edition: { appid: 8680, platform: windows, anonymous: false }
+  race-on-demo: { appid: 8770, platform: windows, anonymous: false }
+  ravaged: { appid: 223160, platform: windows, anonymous: false }
+  red-orchestra-2: { appid: 212542, platform: windows, anonymous: false }
+  red-orchestra-linux: { appid: 223250, platform: linux, anonymous: false }
+  red-orchestra-windows: { appid: 223240, platform: windows, anonymous: false }
+  reflex: { appid: 329740, platform: windows, anonymous: true }
+  reign-of-kings: { appid: 381690, platform: windows, anonymous: false }
+  ricochet: { appid: 90, platform: any, anonymous: true, config: "90 mod ricochet" }
+  rust: { appid: 258550, platform: any, anonymous: true }  # Not Working on Linux with SteamCMD
+  satisfactory: { appid: 1690800, platform: any, anonymous: true }
+  serious-sam-3: { appid: 41080, platform: any, anonymous: false }
+  serious-sam-classics-revolution: { appid: 41005, platform: windows, anonymous: false }
+  serious-sam-hd: { appid: 41005, platform: windows, anonymous: false }
+  serious-sam-hd-the-second-encounter: { appid: 41015, platform: windows, anonymous: true }
+  sniper-elite-3: { appid: 266910, platform: windows, anonymous: false }
+  sniper-elite-v2: { appid: 208050, platform: windows, anonymous: false }
+  sons-of-the-forest: { appid: 2465200, platform: windows, anonymous: true }
+  source: { appid: 205, platform: any, anonymous: true }
+  source-2007: { appid: 310, platform: any, anonymous: true }
+  source-sdk-base-2006-mp: { appid: 205, platform: any, anonymous: true }  # Bug: Linux files missing [todo tested in ?]
+  source-sdk-base-2013: { appid: 244310, platform: any, anonymous: true }
+  space-engineers: { appid: 298740, platform: windows, anonymous: true }
+  squad: { appid: 403240, platform: linux, anonymous: true }
+  squad-windows: { appid: 4103240, platform: windows, anonymous: true }
+  starbound: { appid: 211820, platform: any, anonymous: false }  # Game Purchase Required
+  starvoid: { appid: 210370, platform: windows, anonymous: false }  # Game Purchase Required
+  stcc-the-game-demo: { appid: 8710, platform: windows, anonymous: false }
+  sven-co-op: { appid: 276060, platform: any, anonymous: true }  # Supported on Debian and derivatives (including Ubuntu) only. First enable i386 with `dpkg --add-architecture i386` if running on amd64, then `apt install libc6:i386 zlib1g:i386 libssl1.1:i386 libstdc++6:i386`.
+  synergy: { appid: 17525, platform: windows, anonymous: true }
+  takedown-red-sabre: { appid: 261020, platform: windows, anonymous: true }
+  team-fortress-2: { appid: 232250, platform: any, anonymous: true }
+  team-fortress-classic: { appid: 90, platform: any, anonymous: true, config: "90 mod tfc" }
+  terraria: { appid: 105600, platform: linux, anonymous: false }  # Game Purchase Required
+  the-forest: { appid: 556450, platform: windows, anonymous: true }  # Windows version only
+  the-haunted-hells-reach: { appid: 43210, platform: windows, anonymous: false }
+  the-ship: { appid: 2403, platform: any, anonymous: false }
+  tower-unite: { appid: 439660, platform: any, anonymous: true }
+  unturned: { appid: 1110390, platform: linux, anonymous: false }
+  valheim: { appid: 896660, platform: windows, anonymous: true }
+  windrose: { appid: 4129620, platform: windows, anonymous: true }
+  zombie-grinder: { appid: 374980, platform: windows, anonymous: false }
+  zombie-panic-source: { appid: 17505, platform: any, anonymous: true }

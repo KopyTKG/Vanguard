@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+# Managed by Ansible — edit host_vars/<client>.yml (steam_games) and re-run
+# `just install steamcmd`. Local changes here get overwritten.
+#
+# Install or update a dedicated server. Run it as the {{ steam_user }} user:
+#   ./steamcmd-install.sh            # every configured game
+#   ./steamcmd-install.sh <name>     # just that one
+#
+# Re-running an installed game updates it in place, so this doubles as the
+# update command after a patch.
+
+set -eu
+
+STEAMCMD="{{ steam_home }}/Steam/steamcmd.sh"
+
+# slug, appid, force-platform ("" for native), app_set_config ("" for none)
+install_game() {
+    slug=$1
+    appid=$2
+    force_platform=$3
+    set_config=$4
+
+    echo "==> $slug (appid $appid)"
+
+    # Built up positionally so the optional flags can be left out entirely.
+    set -- +force_install_dir "{{ steam_home }}/$slug"
+    if [ -n "$force_platform" ]; then
+        set -- +@sSteamCmdForcePlatformType "$force_platform" "$@"
+    fi
+    set -- "$@" +login {{ steam_login }}
+    if [ -n "$set_config" ]; then
+        set -- "$@" +app_set_config "$set_config"
+    fi
+    set -- "$@" +app_update "$appid" validate +quit
+
+    "$STEAMCMD" "$@"
+}
+
+{% macro call(g) %}install_game {{ g.slug }} {{ g.appid }} "{{ 'windows' if g.platform == 'windows' else '' }}" "{{ g.config | default('') }}"{% endmacro %}
+case "${1:-all}" in
+{% for g in steam_resolved %}
+    {{ g.slug }}) {{ call(g) }} ;;
+{% endfor %}
+    all)
+{% for g in steam_resolved %}
+        {{ call(g) }}
+{% endfor %}
+        ;;
+    *)
+        echo "unknown game: $1" >&2
+        echo "configured: {{ steam_resolved | map(attribute='slug') | join(' ') }}" >&2
+        exit 1
+        ;;
+esac
