@@ -66,7 +66,9 @@
         name: "{{ steam_user }}"
         home: "{{ steam_home }}"
         create_home: true
-        shell: /bin/bash
+        # Same shell root gets in the baseline, which is also what installs
+        # fish and adds it to /etc/shells.
+        shell: /usr/bin/fish
         groups: sudo
         append: true
         # Fixed salt, otherwise the hash changes every run and so does the task.
@@ -77,6 +79,19 @@
     - name: Set up SteamCMD as the steam user
       become_user: "{{ steam_user }}"
       block:
+        - name: Ensure fish config dir for steam
+          ansible.builtin.file:
+            path: "{{ steam_home }}/.config/fish"
+            state: directory
+            mode: "0755"
+
+        - name: Activate mise in fish
+          ansible.builtin.lineinfile:
+            path: "{{ steam_home }}/.config/fish/config.fish"
+            line: "mise activate fish | source"
+            create: true
+            mode: "0644"
+
         - name: Create the SteamCMD directory
           ansible.builtin.file:
             path: "{{ steam_home }}/Steam"
