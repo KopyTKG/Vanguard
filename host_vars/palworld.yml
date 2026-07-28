@@ -9,4 +9,6 @@ steam_games:
 steam_servers:
   palworld:
     start: ./PalServer.sh
-    stop: stop
+    # PalServer.sh is UE5 and reads nothing on stdin, so there's no console to
+    # send 'stop' to — SIGINT is what gets it to save and exit cleanly.
+    stop_signal: INT
