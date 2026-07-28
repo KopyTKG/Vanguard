@@ -16,6 +16,9 @@
     - name: Resolve the configured games against the app catalog
       ansible.builtin.set_fact:
         steam_catalog: "{{ steam_apps | combine(steam_apps_extra) }}"
+        # Seeded here, not in the loop below — a client with no games configured
+        # skips that task entirely and would otherwise leave this undefined.
+        steam_resolved: []
 
     - name: Check every configured game is a known slug
       ansible.builtin.assert:
@@ -28,7 +31,7 @@
 
     - name: Build the install list
       ansible.builtin.set_fact:
-        steam_resolved: "{{ steam_resolved | default([]) + [steam_catalog[item] | combine({'slug': item})] }}"
+        steam_resolved: "{{ steam_resolved + [steam_catalog[item] | combine({'slug': item})] }}"
       loop: "{{ steam_games }}"
 
     # SteamCMD can only pull these with an account that owns the game, which

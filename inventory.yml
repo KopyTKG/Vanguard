@@ -16,7 +16,7 @@ generic:
 
 steamcmd:
   hosts:
-    palworld: { ansible_port: 2208 }
+    pal-solo: { ansible_port: 2209 }
 
 web:
   hosts:
