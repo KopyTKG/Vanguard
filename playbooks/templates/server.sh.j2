@@ -1,0 +1,99 @@
+#!/usr/bin/env sh
+# usage: ./{{ slug }}-server.sh {start|stop|restart|attach|status|cmd <text>|logs}
+# Managed by Ansible — the CONFIG and BINDINGS blocks come from `steam_servers`
+# in host_vars/<client>.yml; everything below them is generic. Local edits get
+# overwritten by the next `just install steamcmd`.
+SESSION={{ srv.session | default(slug) }}
+DIR={{ steam_home }}/{{ slug }}
+STOP_TIMEOUT={{ srv.stop_timeout | default(60) }}          # seconds to wait for a clean shutdown
+RESTART_DELAY={{ srv.restart_delay | default(5) }}          # seconds between crash respawns
+AUTORESTART={{ 1 if srv.autorestart | default(true) else 0 }}            # 0 = never respawn on nonzero exit
+
+# Helpers usable inside the hooks:
+#   send <text>    type a line into the server console
+#   signal <SIG>   send a signal to the server process (e.g. signal INT)
+#   is_up          true while the session exists
+
+on_start() {             # runs in $DIR, in the foreground; supervised by the loop
+    {{ srv.start }}
+}
+
+on_stop() {              # ask the server to shut down cleanly
+{% if srv.stop_signal is defined %}
+    signal {{ srv.stop_signal }}
+{% else %}
+    send '{{ srv.stop | default('stop') }}'
+{% endif %}
+}
+
+on_restart() {           # default: full cycle
+    stop
+    sleep 2
+    start
+}
+
+set -u
+SELF=$(readlink -f "$0")
+STOPFILE=${TMPDIR:-/tmp}/.$SESSION.stopping
+
+is_up()  { tmux has-session -t "$SESSION" 2>/dev/null; }
+send()   { tmux send-keys -t "$SESSION" "$*" Enter; }
+signal() {
+    pane=$(tmux list-panes -t "$SESSION" -F '#{pane_pid}' | head -n1)
+    [ -n "$pane" ] && pkill "-${1:-TERM}" -P "$pane" 2>/dev/null
+}
+
+_loop() {
+    cd "$DIR" || exit 1
+    while :; do
+        on_start
+        code=$?
+        [ -f "$STOPFILE" ]   && { echo ">> stop requested, staying down."; break; }
+        [ "$code" -eq 0 ]    && { echo ">> clean exit, staying down."; break; }
+        [ "$AUTORESTART" = 1 ] || { echo ">> exit $code, autorestart off."; break; }
+        echo ">> crashed (exit $code), restarting in ${RESTART_DELAY}s..."
+        sleep "$RESTART_DELAY"
+    done
+}
+
+start() {
+    if is_up; then
+        echo "Already running — attaching."
+        exec tmux attach -t "$SESSION"
+    fi
+    [ -d "$DIR" ] || { echo "DIR does not exist: $DIR" >&2; exit 1; }
+    rm -f "$STOPFILE"
+    tmux new-session -d -s "$SESSION" "$SELF" _loop
+    echo "Started '$SESSION'.  attach: $0 attach   stop: $0 stop"
+}
+
+stop() {
+    is_up || { echo "Not running."; return 0; }
+    : > "$STOPFILE"
+    echo "Shutting down, waiting up to ${STOP_TIMEOUT}s..."
+    on_stop
+    i=0
+    while is_up; do
+        i=$((i + 1))
+        [ "$i" -ge "$STOP_TIMEOUT" ] && {
+            echo "Timeout — killing session."
+            tmux kill-session -t "$SESSION" 2>/dev/null
+            break
+        }
+        sleep 1
+    done
+    rm -f "$STOPFILE"
+    echo "Stopped."
+}
+
+case "${1:-}" in
+    _loop)   _loop ;;
+    start)   start ;;
+    stop)    stop ;;
+    restart) on_restart ;;
+    attach)  is_up && exec tmux attach -t "$SESSION" || echo "Not running." ;;
+    status)  is_up && echo "running" || echo "stopped" ;;
+    cmd)     shift; is_up && send "$*" || echo "Not running." ;;
+    logs)    is_up && tmux capture-pane -p -t "$SESSION" -S "-${2:-200}" || echo "Not running." ;;
+    *) echo "usage: $0 {start|stop|restart|attach|status|cmd <text>|logs [n]}"; exit 1 ;;
+esac

@@ -60,6 +60,34 @@ patch, run the script on the client:
 sudo -iu steam ./steamcmd-install.sh palworld
 ```
 
+### Running them
+
+`steam_games` installs a game; `steam_servers` is what actually runs it. Entries
+are keyed by the same slug and say how to launch and shut down:
+
+```yaml
+steam_servers:
+  palworld:
+    start: ./PalServer.sh    # run from ~steam/palworld
+    stop: stop               # console line; use stop_signal: INT instead when
+                             # the server has no console
+```
+
+Each one gets `~steam/<slug>-server.sh`, which supervises the server in a tmux
+session and respawns it if it crashes, plus a `@reboot` line in the steam user's
+crontab. A game in `steam_games` but not `steam_servers` is installed and left
+alone.
+
+```bash
+sudo -iu steam ./palworld-server.sh start      # stop | restart | status
+sudo -iu steam ./palworld-server.sh attach     # drop into the console
+sudo -iu steam ./palworld-server.sh cmd 'say hi'
+sudo -iu steam ./palworld-server.sh logs 200
+```
+
+`stop_timeout`, `restart_delay`, `autorestart`, `session` and `boot` are the
+remaining knobs — see `group_vars/steamcmd.yml` for the defaults.
+
 ## Setup
 
 ```bash

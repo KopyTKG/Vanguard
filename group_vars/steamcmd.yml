@@ -14,6 +14,10 @@ steamcmd_packages:
   - lib32gcc-s1
   # Lets Ansible hand its temp files to the unprivileged steam user.
   - acl
+  # The control script runs the server under tmux (in baseline_packages),
+  # signals it with pkill, and starts it at boot from the steam user's crontab.
+  - procps
+  - cron
 
 # Steam account used for downloads. Most dedicated servers allow anonymous;
 # the ones marked `anonymous: false` in the catalog need a real account that
@@ -28,3 +32,20 @@ steam_games: []
 #   steam_apps_extra:
 #     my-game: { appid: 123456, platform: linux, anonymous: true }
 steam_apps_extra: {}
+
+# Which installed games actually run, keyed by the same slug as steam_games.
+# Each entry gets a tmux control script at {{ steam_home }}/<slug>-server.sh
+# (start/stop/restart/attach/status/cmd/logs) and a @reboot cron job. A game in
+# steam_games but not here is installed and left alone.
+#
+#   steam_servers:
+#     my-game:
+#       start: ./MyServer.sh   # required; run from {{ steam_home }}/<slug>
+#       stop: stop             # console line sent on shutdown (default: stop)
+#       stop_signal: INT       # ...or signal instead, for console-less servers
+#       session: my-game       # tmux session name (default: the slug)
+#       stop_timeout: 60       # seconds to wait for a clean exit
+#       restart_delay: 5       # seconds between crash respawns
+#       autorestart: true      # respawn on nonzero exit
+#       boot: true             # start at boot via cron
+steam_servers: {}

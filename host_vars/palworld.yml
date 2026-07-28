@@ -5,3 +5,8 @@
 # to run. Installing it is all this playbook does.
 steam_games:
   - palworld
+
+steam_servers:
+  palworld:
+    start: ./PalServer.sh
+    stop: stop

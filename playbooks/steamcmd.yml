@@ -45,6 +45,14 @@
       loop_control:
         label: "{{ item.slug }}"
 
+    - name: Check every configured server is a game we install
+      ansible.builtin.assert:
+        that: steam_servers.keys() | difference(steam_games) | length == 0
+        fail_msg: >-
+          steam_servers has entries not in steam_games:
+          {{ steam_servers.keys() | difference(steam_games) | join(', ') }}.
+        quiet: true
+
     - name: Install SteamCMD dependencies
       ansible.builtin.apt:
         name: "{{ steamcmd_packages }}"
@@ -95,6 +103,37 @@
           loop: "{{ steam_resolved }}"
           loop_control:
             label: "{{ item.slug }}"
+
+        - name: Install the server control scripts
+          ansible.builtin.template:
+            src: server.sh.j2
+            dest: "{{ steam_home }}/{{ item.key }}-server.sh"
+            mode: "0755"
+          loop: "{{ steam_servers | dict2items }}"
+          loop_control:
+            label: "{{ item.key }}"
+          vars:
+            slug: "{{ item.key }}"
+            srv: "{{ item.value }}"
+
+    # Root again: the crontab belongs to the steam user but only root can write
+    # someone else's.
+    - name: Ensure cron is running
+      ansible.builtin.service:
+        name: cron
+        state: started
+        enabled: true
+
+    - name: Start the servers at boot
+      ansible.builtin.cron:
+        name: "start {{ item.key }}"
+        user: "{{ steam_user }}"
+        special_time: reboot
+        job: "{{ steam_home }}/{{ item.key }}-server.sh start"
+        state: "{{ 'present' if item.value.boot | default(true) else 'absent' }}"
+      loop: "{{ steam_servers | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
 
     - name: Note the games that ship Windows binaries only
       ansible.builtin.debug:
