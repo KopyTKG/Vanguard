@@ -16,3 +16,4 @@ baseline_packages:
   - vim
   - unattended-upgrades
   - fish
+  - tmux
