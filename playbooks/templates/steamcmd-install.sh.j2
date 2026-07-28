@@ -36,7 +36,7 @@ install_game() {
     "$STEAMCMD" "$@"
 }
 
-{% macro call(g) %}install_game {{ g.slug }} {{ g.appid }} "{{ 'windows' if g.platform == 'windows' else '' }}" "{{ g.config | default('') }}"{% endmacro %}
+{% macro call(g) %}install_game {{ g.slug }} {{ g.appid }} "{{ g.force_platform | default('') }}" "{{ g.config | default('') }}"{% endmacro %}
 case "${1:-all}" in
 {% for g in steam_resolved %}
     {{ g.slug }}) {{ call(g) }} ;;

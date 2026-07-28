@@ -45,13 +45,19 @@ Each game installs into `~steam/<slug>`. Unknown slugs fail the run with the
 list of what's valid. Anything the catalog is missing goes in `steam_apps_extra`
 in the same shape.
 
-Two things the catalog tracks that change what gets installed:
+Installs are always native. The catalog's `platform` field only records which
+wiki table the server appears in — it doesn't change what gets downloaded,
+because the wiki is wrong often enough that acting on it does more harm than a
+failed download. Palworld is the example: listed Windows-only, ships a Linux
+depot. A game that genuinely has no Linux build fails at download; set
+`force_platform: windows` on it and run it under Proton/Wine yourself.
 
-- **`platform: windows`** — the game has no Linux build (Palworld is one).
-  SteamCMD downloads it via `+@sSteamCmdForcePlatformType windows`, so the files
-  land, but running it needs Proton or Wine. That part isn't automated.
+What the catalog does change:
+
 - **`anonymous: false`** — SteamCMD needs an account that owns the game. The
   playbook refuses to install these until `steam_login` is set to a real one.
+- **`config`** — extra `+app_set_config`, which the GoldSrc mods sharing appid
+  90 need to pick a mod.
 
 The playbook skips games that are already installed. To pull an update after a
 patch, run the script on the client:

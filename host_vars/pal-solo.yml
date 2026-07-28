@@ -1,8 +1,7 @@
 ---
 # pal-solo — Palworld dedicated server. Consumed by playbooks/steamcmd.yml.
-# Valve's list has Palworld under Windows only — appid 2394010 has no Linux
-# build, so it installs via SteamCMD's platform override and needs Proton/Wine
-# to run. Installing it is all this playbook does.
+# Valve's list has Palworld under Windows only, but 2394010 does ship a Linux
+# depot — PalServer.sh below is it. Installs native, no Proton needed.
 steam_games:
   - palworld
 

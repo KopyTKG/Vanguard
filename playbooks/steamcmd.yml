@@ -153,10 +153,10 @@
       loop_control:
         label: "{{ item.key }}"
 
-    - name: Note the games that ship Windows binaries only
+    - name: Note the games pulled as Windows builds
       ansible.builtin.debug:
         msg: >-
-          {{ steam_resolved | selectattr('platform', 'eq', 'windows') | map(attribute='slug') | join(', ') }}
-          installed as Windows builds (SteamCMD platform override) — they need
-          Proton or Wine to actually run; this playbook only installs them.
-      when: steam_resolved | selectattr('platform', 'eq', 'windows') | list | length > 0
+          {{ steam_resolved | selectattr('force_platform', 'defined') | map(attribute='slug') | join(', ') }}
+          installed as Windows builds (force_platform) — they need Proton or
+          Wine to actually run; this playbook only installs them.
+      when: steam_resolved | selectattr('force_platform', 'defined') | list | length > 0

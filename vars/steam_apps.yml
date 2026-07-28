@@ -4,11 +4,16 @@
 #   https://developer.valvesoftware.com/wiki/Dedicated_Servers_List
 #
 # Referenced by slug from `steam_games` (see host_vars/<client>.yml).
-#   platform   linux | windows | any — `windows` needs SteamCMD's platform
-#              override, and the server itself needs Proton/Wine to run.
+#   platform   which tables the wiki lists the server under. Informational
+#              only — installs are always native, so a game with no Linux
+#              depot fails loudly at download rather than quietly pulling
+#              Windows binaries. The wiki is wrong often enough that guessing
+#              from it is worse than the failure (see palworld).
 #   anonymous  false means SteamCMD needs a real Steam account that owns the
 #              game; playbooks/steamcmd.yml refuses to install those anonymously.
 #   config     extra +app_set_config passed before app_update (GoldSrc mods).
+#   force_platform  set to `windows` on an app that genuinely has no Linux
+#              build and you intend to run under Proton/Wine. Off by default.
 #
 # Mare Nostrum is omitted: the wiki lists its AppID as "?".
 # Anything else missing can be added per client via `steam_apps_extra`.
@@ -107,7 +112,8 @@ steam_apps:
   nuclear-dawn: { appid: 111710, platform: windows, anonymous: true }
   out-of-reach: { appid: 406800, platform: any, anonymous: true }
   painkiller-hell-and-damnation: { appid: 230030, platform: windows, anonymous: false }
-  palworld: { appid: 2394010, platform: windows, anonymous: true }
+  # Wiki lists this under Windows only; it ships a Linux depot (PalServer.sh).
+  palworld: { appid: 2394010, platform: any, anonymous: true }
   pirates-vikings-and-knights-ii: { appid: 17575, platform: any, anonymous: true }
   primal-carnage: { appid: 224620, platform: windows, anonymous: false }
   project-zomboid: { appid: 108600, platform: any, anonymous: false }  # Game Purchase Required
