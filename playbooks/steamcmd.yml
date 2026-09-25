@@ -73,6 +73,7 @@
         append: true
         # Fixed salt, otherwise the hash changes every run and so does the task.
         password: "{{ steam_password | password_hash('sha512', steam_user) }}"
+        update_password: on_create
 
     # Everything below is the manual install from the Valve docs, run as the
     # steam user rather than root.

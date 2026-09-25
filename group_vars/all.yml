@@ -17,3 +17,4 @@ baseline_packages:
   - unattended-upgrades
   - fish
   - tmux
+  - isc-dhcp-client

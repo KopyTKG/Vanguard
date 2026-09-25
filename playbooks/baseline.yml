@@ -13,11 +13,18 @@
       ansible.builtin.hostname:
         name: "{{ inventory_hostname }}"
 
+    - name: Clean old packages
+      ansible.builtin.apt:
+        autoclean: true
+        autoremove: true
+
     - name: Update and upgrade apt
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
         upgrade: dist
+        autoclean: true
+        autoremove: true
 
     - name: Install baseline packages
       ansible.builtin.apt:

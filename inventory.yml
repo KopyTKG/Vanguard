@@ -8,15 +8,16 @@
 generic:
   hosts:
     esl: { ansible_port: 2225 }
-    vpn: { ansible_port: 2200 }
-    allthemons: { ansible_port: 2204 }
+    ts-server: { ansible_port: 2200 }
+    #allthemons: { ansible_port: 2204 }
     kuma: { ansible_port: 2205 }
     grafana: { ansible_port: 2206 }
     proxy: { ansible_port: 2207 }
+    jenkins: { ansible_port: 2208 }
 
 steamcmd:
   hosts:
-    pal-solo: { ansible_port: 2209 }
+    avorion: { ansible_port: 2209 }
 
 web:
   hosts:
