@@ -8,6 +8,9 @@ DIR={{ steam_home }}/{{ slug }}
 STOP_TIMEOUT={{ srv.stop_timeout | default(60) }}          # seconds to wait for a clean shutdown
 RESTART_DELAY={{ srv.restart_delay | default(5) }}          # seconds between crash respawns
 AUTORESTART={{ 1 if srv.autorestart | default(true) else 0 }}            # 0 = never respawn on nonzero exit
+LOGDIR=/var/log/steamcmd
+LOGFILE=$LOGDIR/{{ slug }}.log            # all runs since the last `start`, crashes included
+LOGFILE_OLD=$LOGFILE.old                  # previous `start`'s log, kept for postmortem
 
 # Helpers usable inside the hooks:
 #   send <text>    type a line into the server console
@@ -35,6 +38,7 @@ on_restart() {           # default: full cycle
 set -u
 SELF=$(readlink -f "$0")
 STOPFILE=${TMPDIR:-/tmp}/.$SESSION.stopping
+STATUSFILE=${TMPDIR:-/tmp}/.$SESSION.exitcode
 
 is_up()  { tmux has-session -t "$SESSION" 2>/dev/null; }
 send()   { tmux send-keys -t "$SESSION" "$*" Enter; }
@@ -42,16 +46,19 @@ signal() {
     pane=$(tmux list-panes -t "$SESSION" -F '#{pane_pid}' | head -n1)
     [ -n "$pane" ] && pkill "-${1:-TERM}" -P "$pane" 2>/dev/null
 }
+log()    { echo "$*" | tee -a "$LOGFILE"; }   # supervisor message: pane + logfile
 
 _loop() {
     cd "$DIR" || exit 1
     while :; do
-        on_start
-        code=$?
-        [ -f "$STOPFILE" ]   && { echo ">> stop requested, staying down."; break; }
-        [ "$code" -eq 0 ]    && { echo ">> clean exit, staying down."; break; }
-        [ "$AUTORESTART" = 1 ] || { echo ">> exit $code, autorestart off."; break; }
-        echo ">> crashed (exit $code), restarting in ${RESTART_DELAY}s..."
+        # $? after a pipeline is tee's, not on_start's — stash the real one in
+        # a file instead (no PIPESTATUS, this runs under plain sh).
+        { on_start; echo $? > "$STATUSFILE"; } 2>&1 | tee -a "$LOGFILE"
+        code=$(cat "$STATUSFILE")
+        [ -f "$STOPFILE" ]   && { log ">> stop requested, staying down."; break; }
+        [ "$code" -eq 0 ]    && { log ">> clean exit, staying down."; break; }
+        [ "$AUTORESTART" = 1 ] || { log ">> exit $code, autorestart off."; break; }
+        log ">> crashed (exit $code), restarting in ${RESTART_DELAY}s..."
         sleep "$RESTART_DELAY"
     done
 }
@@ -63,8 +70,10 @@ start() {
     fi
     [ -d "$DIR" ] || { echo "DIR does not exist: $DIR" >&2; exit 1; }
     rm -f "$STOPFILE"
+    mkdir -p "$LOGDIR"
+    [ -f "$LOGFILE" ] && mv -f "$LOGFILE" "$LOGFILE_OLD"
     tmux new-session -d -s "$SESSION" "$SELF" _loop
-    echo "Started '$SESSION'.  attach: $0 attach   stop: $0 stop"
+    echo "Started '$SESSION'.  attach: $0 attach   stop: $0 stop   logs: $0 logs"
 }
 
 stop() {
@@ -94,6 +103,6 @@ case "${1:-}" in
     attach)  is_up && exec tmux attach -t "$SESSION" || echo "Not running." ;;
     status)  is_up && echo "running" || echo "stopped" ;;
     cmd)     shift; is_up && send "$*" || echo "Not running." ;;
-    logs)    is_up && tmux capture-pane -p -t "$SESSION" -S "-${2:-200}" || echo "Not running." ;;
+    logs)    [ -f "$LOGFILE" ] && tail -n "${2:-200}" "$LOGFILE" || echo "No log yet: $LOGFILE" ;;
     *) echo "usage: $0 {start|stop|restart|attach|status|cmd <text>|logs [n]}"; exit 1 ;;
 esac

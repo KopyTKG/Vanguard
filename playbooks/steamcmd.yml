@@ -75,6 +75,15 @@
         password: "{{ steam_password | password_hash('sha512', steam_user) }}"
         update_password: on_create
 
+    # /var/log itself needs root to create a new entry under it — the steam
+    # user can write log files here afterwards, but not make the directory.
+    - name: Create the log directory for server control scripts
+      ansible.builtin.file:
+        path: /var/log/steamcmd
+        state: directory
+        owner: "{{ steam_user }}"
+        mode: "0755"
+
     # Everything below is the manual install from the Valve docs, run as the
     # steam user rather than root.
     - name: Set up SteamCMD as the steam user
