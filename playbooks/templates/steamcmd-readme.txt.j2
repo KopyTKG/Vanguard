@@ -1,0 +1,33 @@
+{{ slug }} — dedicated server
+Managed by Ansible (playbooks/steamcmd.yml). Local edits to this file get
+overwritten by the next `just install steamcmd` — change host_vars/<client>.yml
+instead and re-run it.
+
+Steam AppID:    {{ appid }}
+Install dir:    {{ steam_home }}/{{ slug }}
+Control script: {{ steam_home }}/{{ slug }}-server.sh {start|stop|restart|attach|status|cmd <text>|logs [n]}
+
+LOG FILE
+  Current log:  /var/log/steamcmd/{{ slug }}.log
+  Previous run: /var/log/steamcmd/{{ slug }}.log.old  (rotated on every `start`)
+  To change the location for every instance at once, edit LOGDIR near the top
+  of playbooks/templates/server.sh.j2 and re-run `just install steamcmd`.
+
+STOP COMMAND
+  This instance is stopped by:
+{% if srv.stop_signal is defined %}
+    a signal — SIG{{ srv.stop_signal }} sent to the server process.
+{% else %}
+    typing "{{ srv.stop | default('stop') }}" into the server's console.
+{% endif %}
+
+  Games differ here — some read a bare word on stdin ("stop", "quit"), some
+  want a slash command ("/stop"), and some (mostly Unreal/UE engine servers)
+  don't read stdin at all and need a signal instead. Check your game's own
+  docs/wiki for which one it expects; sending the wrong kind does nothing.
+
+  To change it, set in host_vars/<client>.yml under steam_servers.{{ slug }}:
+    stop: "<text>"      # a line sent to the console, e.g. "stop" or "/stop"
+    stop_signal: <SIG>  # ...or a signal instead, e.g. INT or TERM
+  Only one is used — stop_signal wins if both are set — then re-run
+  `just install steamcmd`.

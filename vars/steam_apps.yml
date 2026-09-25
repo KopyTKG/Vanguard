@@ -60,7 +60,7 @@ steam_apps:
   day-of-defeat: { appid: 90, platform: any, anonymous: true, config: "90 mod dod" }
   day-of-defeat-source: { appid: 232290, platform: any, anonymous: true }
   day-of-infamy: { appid: 462310, platform: any, anonymous: true }
-  dayz: { appid: 223350, platform: windows, anonymous: false }
+  dayz: { appid: 223350, platform: any, anonymous: false }
   deathmatch-classic: { appid: 90, platform: any, anonymous: true, config: "90 mod dmc" }
   dino-d-day: { appid: 70010, platform: windows, anonymous: false }
   don-t-starve-together: { appid: 343050, platform: linux, anonymous: true }
@@ -113,7 +113,6 @@ steam_apps:
   nuclear-dawn: { appid: 111710, platform: windows, anonymous: true }
   out-of-reach: { appid: 406800, platform: any, anonymous: true }
   painkiller-hell-and-damnation: { appid: 230030, platform: windows, anonymous: false }
-  # Wiki lists this under Windows only; it ships a Linux depot (PalServer.sh).
   palworld: { appid: 2394010, platform: any, anonymous: true }
   pirates-vikings-and-knights-ii: { appid: 17575, platform: any, anonymous: true }
   primal-carnage: { appid: 224620, platform: windows, anonymous: false }
@@ -131,7 +130,7 @@ steam_apps:
   reflex: { appid: 329740, platform: windows, anonymous: true }
   reign-of-kings: { appid: 381690, platform: windows, anonymous: false }
   ricochet: { appid: 90, platform: any, anonymous: true, config: "90 mod ricochet" }
-  rust: { appid: 258550, platform: any, anonymous: true } # Not Working on Linux with SteamCMD
+  rust: { appid: 258550, platform: any, anonymous: true }
   satisfactory: { appid: 1690800, platform: any, anonymous: true }
   serious-sam-3: { appid: 41080, platform: any, anonymous: false }
   serious-sam-classics-revolution: { appid: 41005, platform: windows, anonymous: false }

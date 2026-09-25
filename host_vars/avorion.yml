@@ -5,7 +5,5 @@ steam_games:
 
 steam_servers:
   avorion:
-    start: ./AvorionServer.sh
-    # Avorion's console takes typed commands, "stop" saves and shuts down
-    # cleanly — that's already the template default, listed here for clarity.
-    stop: stop
+    start: ./server.sh
+    stop: "/stop"

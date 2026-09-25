@@ -144,6 +144,19 @@
             slug: "{{ item.key }}"
             srv: "{{ item.value }}"
 
+        - name: Install a README for each server instance
+          ansible.builtin.template:
+            src: steamcmd-readme.txt.j2
+            dest: "{{ steam_home }}/{{ item.key }}/README.txt"
+            mode: "0644"
+          loop: "{{ steam_servers | dict2items }}"
+          loop_control:
+            label: "{{ item.key }}"
+          vars:
+            slug: "{{ item.key }}"
+            srv: "{{ item.value }}"
+            appid: "{{ (steam_resolved | selectattr('slug', 'equalto', item.key) | first).appid }}"
+
     # Root again: the crontab belongs to the steam user but only root can write
     # someone else's.
     - name: Ensure cron is running

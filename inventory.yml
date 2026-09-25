@@ -17,7 +17,7 @@ generic:
 
 steamcmd:
   hosts:
-    avorion: { ansible_port: 2209 }
+    avorion: { ansible_port: 2209 }  # steam_games slug: avorion (host_vars/avorion.yml)
 
 web:
   hosts:
