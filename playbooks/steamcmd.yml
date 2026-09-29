@@ -102,6 +102,12 @@
             create: true
             mode: "0644"
 
+        - name: Install the baseline vim config for steam
+          ansible.builtin.copy:
+            src: files/vimrc
+            dest: "{{ steam_home }}/.vimrc"
+            mode: "0644"
+
         - name: Create the SteamCMD directory
           ansible.builtin.file:
             path: "{{ steam_home }}/Steam"

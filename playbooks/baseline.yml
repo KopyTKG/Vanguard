@@ -78,3 +78,9 @@
         line: "mise activate fish | source"
         create: true
         mode: "0644"
+
+    - name: Install the baseline vim config
+      ansible.builtin.copy:
+        src: files/vimrc
+        dest: /root/.vimrc
+        mode: "0644"

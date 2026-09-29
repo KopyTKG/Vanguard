@@ -1,0 +1,29 @@
+" Baseline vim config for server boxes: editing comfort only, no plugins.
+" Trimmed down from https://github.com/kopytkg/nvim; managed by Ansible
+" (playbooks/baseline.yml, playbooks/steamcmd.yml) — local edits get
+" overwritten by the next `just baseline` / `just install steamcmd`.
+
+let mapleader = " "
+
+set relativenumber
+set number
+set mouse=a
+set clipboard=unnamedplus
+set breakindent
+set ignorecase
+set smartcase
+set incsearch
+set hlsearch
+set undofile
+set signcolumn=yes
+set termguicolors
+set splitbelow
+set splitright
+set scrolloff=10
+
+" [<leader>pv] Open the parent directory (built-in netrw)
+nnoremap <leader>pv :Ex<CR>
+" [<leader>w] Save file
+nnoremap <leader>w :w<CR>
+" [<Esc>] Clear search highlight
+nnoremap <Esc> :nohlsearch<CR>
