@@ -10,14 +10,14 @@ generic:
     esl: { ansible_port: 2225 }
     ts-server: { ansible_port: 2200 }
     #allthemons: { ansible_port: 2204 }
-    kuma: { ansible_port: 2205 }
     grafana: { ansible_port: 2206 }
     proxy: { ansible_port: 2207 }
     jenkins: { ansible_port: 2208 }
+    foundry: { ansible_port: 2210 }
 
 steamcmd:
   hosts:
-    avorion: { ansible_port: 2209 }  # steam_games slug: avorion (host_vars/avorion.yml)
+    avorion: { ansible_port: 2209 } # steam_games slug: avorion (host_vars/avorion.yml)
 
 web:
   hosts:
