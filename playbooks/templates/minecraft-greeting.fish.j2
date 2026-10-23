@@ -1,0 +1,17 @@
+# Managed by Ansible (playbooks/minecraft.yml) — local edits get overwritten.
+function fish_greeting
+    set_color --bold cyan
+    echo "minecraft — {{ mc_modpack.pack | default(mc_modpack.url | default('')) }}"
+    set_color normal
+    echo
+    echo "  ./minecraft.sh start|stop|restart|status"
+    echo "  ./minecraft.sh attach          (detach: Ctrl-b d)"
+    echo "  ./minecraft.sh cmd <text>      (type into the console, e.g. cmd say hi)"
+    echo "  ./minecraft.sh logs [n]        (/var/log/minecraft/minecraft.log)"
+    echo
+    echo "  server:   ~/server   (world, mods, config, server.properties)"
+    echo "  java:     "(mise which java 2>/dev/null; or echo "not installed")
+    echo "  memory:   {{ mc_memory }}    port: {{ mc_port }}"
+    echo "  starts at boot from this user's crontab (crontab -l)"
+    echo
+end

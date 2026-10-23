@@ -1,0 +1,130 @@
+#!/usr/bin/env sh
+# usage: ./minecraft.sh {start|stop|restart|attach|status|cmd <text>|logs [n]}
+# Managed by Ansible — the CONFIG block comes from host_vars/<client>.yml
+# (mc_*); everything below it is generic. Local edits get overwritten by the
+# next `just install minecraft`.
+
+# ---- CONFIG ----------------------------------------------------------------
+SESSION=minecraft
+ROOT={{ mc_home }}                          # base dir for everything below
+DIR=$ROOT/server                            # the unpacked modpack server
+MEMORY={{ mc_memory }}                      # heap size (-Xms/-Xmx)
+LAUNCH={{ mc_launch | default('') }}        # server jar, blank = auto-detect
+STOP_TIMEOUT={{ mc_stop_timeout }}          # seconds to wait for a clean save + shutdown
+RESTART_DELAY=10                            # seconds between crash respawns
+AUTORESTART=1                               # 0 = never respawn on nonzero exit
+LOGDIR=/var/log/minecraft
+LOGFILE=$LOGDIR/minecraft.log               # all runs since the last `start`, crashes included
+LOGFILE_OLD=$LOGFILE.old                    # previous `start`'s log, kept for postmortem
+# -----------------------------------------------------------------------------
+
+# Resolved at run time so the *global* mise java ({{ mc_java }}) is used (no
+# config in $DIR, so mise falls back to the global version). Forge/NeoForge's
+# run.sh calls plain `java`, so its directory goes on PATH too.
+export PATH="$ROOT/.local/bin:$ROOT/.local/share/mise/shims:$PATH"
+RUNNER=$(eval mise which java)
+export PATH="$(dirname "$RUNNER"):$PATH"
+
+# Helpers usable inside the hooks:
+#   send <text>    type a line into the server console
+#   signal <SIG>   send a signal to the server process (e.g. signal INT)
+#   is_up          true while the session exists
+
+on_start() {             # runs in $DIR, in the foreground; supervised by the loop
+    if [ -f run.sh ]; then                    # Forge / NeoForge
+        echo "Starting minecraft: ./run.sh nogui ($RUNNER, $MEMORY)"
+        JAVA_TOOL_OPTIONS="-Xms$MEMORY -Xmx$MEMORY" sh ./run.sh nogui
+        return $?
+    fi
+    jar=$LAUNCH
+    if [ -z "$jar" ]; then
+        for f in fabric-server-launch.jar quilt-server-launch.jar server.jar; do
+            [ -f "$f" ] && { jar=$f; break; }
+        done
+    fi
+    [ -n "$jar" ] && [ -f "$jar" ] || { echo "No server jar or run.sh found in $DIR" >&2; return 1; }
+    echo "Starting minecraft: $RUNNER -jar $jar nogui ($MEMORY)"
+    "$RUNNER" -Xms$MEMORY -Xmx$MEMORY -jar "$jar" nogui
+}
+
+on_stop() {              # `stop` saves the world before exiting
+    send 'stop'
+}
+
+on_restart() {           # default: full cycle
+    stop
+    sleep 2
+    start
+}
+
+set -u
+SELF=$(readlink -f "$0")
+STOPFILE=${TMPDIR:-/tmp}/.$SESSION.stopping
+STATUSFILE=${TMPDIR:-/tmp}/.$SESSION.exitcode
+
+is_up()  { tmux has-session -t "$SESSION" 2>/dev/null; }
+send()   { tmux send-keys -t "$SESSION" "$*" Enter; }
+signal() {
+    pane=$(tmux list-panes -t "$SESSION" -F '#{pane_pid}' | head -n1)
+    [ -n "$pane" ] && pkill "-${1:-TERM}" -P "$pane" 2>/dev/null
+}
+log()    { echo "$*" | tee -a "$LOGFILE"; }   # supervisor message: pane + logfile
+
+_loop() {
+    cd "$DIR" || exit 1
+    while :; do
+        # $? after a pipeline is tee's, not on_start's — stash the real one in
+        # a file instead (no PIPESTATUS, this runs under plain sh).
+        { on_start; echo $? > "$STATUSFILE"; } 2>&1 | tee -a "$LOGFILE"
+        code=$(cat "$STATUSFILE")
+        [ -f "$STOPFILE" ]   && { log ">> stop requested, staying down."; break; }
+        [ "$code" -eq 0 ]    && { log ">> clean exit, staying down."; break; }
+        [ "$AUTORESTART" = 1 ] || { log ">> exit $code, autorestart off."; break; }
+        log ">> crashed (exit $code), restarting in ${RESTART_DELAY}s..."
+        sleep "$RESTART_DELAY"
+    done
+}
+
+start() {
+    if is_up; then
+        echo "Already running — attaching."
+        exec tmux attach -t "$SESSION"
+    fi
+    [ -d "$DIR" ] || { echo "DIR does not exist: $DIR" >&2; exit 1; }
+        rm -f "$STOPFILE"
+    mkdir -p "$LOGDIR"
+    [ -f "$LOGFILE" ] && mv -f "$LOGFILE" "$LOGFILE_OLD"
+    tmux new-session -d -s "$SESSION" "$SELF" _loop
+    echo "Started '$SESSION'.  attach: $0 attach   stop: $0 stop   logs: $0 logs"
+}
+
+stop() {
+    is_up || { echo "Not running."; return 0; }
+    : > "$STOPFILE"
+    echo "Shutting down, waiting up to ${STOP_TIMEOUT}s..."
+    on_stop
+    i=0
+    while is_up; do
+        i=$((i + 1))
+        [ "$i" -ge "$STOP_TIMEOUT" ] && {
+            echo "Timeout — killing session."
+            tmux kill-session -t "$SESSION" 2>/dev/null
+            break
+        }
+        sleep 1
+    done
+    rm -f "$STOPFILE"
+    echo "Stopped."
+}
+
+case "${1:-}" in
+    _loop)   _loop ;;
+    start)   start ;;
+    stop)    stop ;;
+    restart) on_restart ;;
+    attach)  is_up && exec tmux attach -t "$SESSION" || echo "Not running." ;;
+    status)  is_up && echo "running" || echo "stopped" ;;
+    cmd)     shift; is_up && send "$*" || echo "Not running." ;;
+    logs)    [ -f "$LOGFILE" ] && tail -n "${2:-200}" "$LOGFILE" || echo "No log yet: $LOGFILE" ;;
+    *) echo "usage: $0 {start|stop|restart|attach|status|cmd <text>|logs [n]}"; exit 1 ;;
+esac

@@ -1,0 +1,48 @@
+# Vars for the `minecraft` group. Consumed by playbooks/minecraft.yml.
+# Unprivileged user that runs the server. No sudo, no password — you reach it
+# by SSHing in as root and running `su - minecraft`.
+mc_user: minecraft
+mc_home: "/home/{{ mc_user }}"
+
+mc_packages:
+  # Lets Ansible hand its temp files to the unprivileged minecraft user.
+  - acl
+  # The launcher runs the server under tmux (in baseline_packages), signals it
+  # with pkill, and starts it at boot from the minecraft user's crontab.
+  - procps
+  - cron
+  - unzip
+  - curl
+  - ca-certificates
+
+# Per-host settings (host_vars/<client>.yml) — these are the defaults.
+#
+# Java installed by mise and set as the minecraft user's global. Any mise java
+# spec works: "temurin-21", "temurin-17", "zulu-21", "21", ...
+# Rule of thumb: MC 1.20.5+ needs 21, 1.18-1.20.4 needs 17, older needs 8/11.
+mc_java: temurin-21
+mc_memory: 4G
+mc_port: 25565
+mc_stop_timeout: 120 # seconds `stop` waits for the world to save
+
+# Mojang EULA (https://aka.ms/MinecraftEULA) — must be set true per host, the
+# playbook refuses to continue otherwise.
+mc_eula: false
+
+# Modpack to install into ~/server. Required per host. Two sources:
+#
+#   mc_modpack:                      # Modrinth .mrpack, via mrpack-install
+#     source: modrinth
+#     pack: adrenaserver             # slug, project id, or .mrpack URL/path
+#     version: 1.2.3                 # optional, default = latest
+#
+#   mc_modpack:                      # CurseForge *server pack* zip
+#     source: curseforge
+#     url: https://mediafilez.forgecdn.net/files/.../ServerFiles-1.2.zip
+#     version: "1.2"                 # optional label; change it to reinstall
+#
+# CurseForge: use the pack's "Server Files" download, not the client modpack —
+# client manifests need an API key and don't contain the server jar.
+# Changing pack/version/url reinstalls the pack over ~/server (mods/config are
+# replaced, worlds and server.properties are kept).
+mc_modpack: {}

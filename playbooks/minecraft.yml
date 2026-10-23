@@ -1,0 +1,203 @@
+---
+# Install a modded Minecraft server (Modrinth or CurseForge pack) on the
+# minecraft clients, running as an unprivileged `minecraft` user with Java from
+# mise. Run: `just install minecraft`
+#
+# Per-host settings live in host_vars/<client>.yml, defaults and a full
+# example in group_vars/minecraft.yml.
+- name: Install Minecraft modpack server
+  hosts: minecraft
+  become: true
+
+  tasks:
+    - name: Check the host is configured
+      ansible.builtin.assert:
+        that:
+          - mc_eula | bool
+          - mc_modpack.source | default('') in ['modrinth', 'curseforge']
+          - mc_modpack.source != 'modrinth' or mc_modpack.pack is defined
+          - mc_modpack.source != 'curseforge' or mc_modpack.url is defined
+        fail_msg: >-
+          Set mc_eula: true (you accept https://aka.ms/MinecraftEULA) and an
+          mc_modpack (source: modrinth + pack, or source: curseforge + url) in
+          host_vars/{{ inventory_hostname }}.yml. See group_vars/minecraft.yml.
+        quiet: true
+
+    - name: Install Minecraft dependencies
+      ansible.builtin.apt:
+        name: "{{ mc_packages }}"
+        state: present
+
+    # No sudo group and no password: root reaches this user with `su - minecraft`.
+    - name: Create the minecraft user
+      ansible.builtin.user:
+        name: "{{ mc_user }}"
+        home: "{{ mc_home }}"
+        create_home: true
+        shell: /usr/bin/fish
+        password: "!"
+        update_password: on_create
+
+    # /var/log needs root to create a new entry under it — the minecraft user
+    # can write log files here afterwards, but not make the directory.
+    - name: Create the log directory for the launcher
+      ansible.builtin.file:
+        path: /var/log/minecraft
+        state: directory
+        owner: "{{ mc_user }}"
+        mode: "0755"
+
+    - name: Install mrpack-install (Modrinth server pack installer)
+      ansible.builtin.get_url:
+        url: https://github.com/nothub/mrpack-install/releases/latest/download/mrpack-install-linux
+        dest: /usr/local/bin/mrpack-install
+        mode: "0755"
+      when: mc_modpack.source | default('') == 'modrinth'
+
+    - name: Set up Java and the modpack as the minecraft user
+      become_user: "{{ mc_user }}"
+      block:
+        - name: Ensure fish functions dir for minecraft
+          ansible.builtin.file:
+            path: "{{ mc_home }}/.config/fish/functions"
+            state: directory
+            mode: "0755"
+
+        - name: Activate mise in fish
+          ansible.builtin.lineinfile:
+            path: "{{ mc_home }}/.config/fish/config.fish"
+            line: "mise activate fish | source"
+            create: true
+            mode: "0644"
+
+        - name: Show how to use the launcher on login
+          ansible.builtin.template:
+            src: minecraft-greeting.fish.j2
+            dest: "{{ mc_home }}/.config/fish/functions/fish_greeting.fish"
+            mode: "0644"
+
+        - name: Install Java and set it as the global version
+          ansible.builtin.command: "mise use --global java@{{ mc_java }}"
+          environment:
+            MISE_YES: "1"
+          register: mise_java
+          changed_when: "'install' in mise_java.stderr"
+
+        - name: Create the server directory
+          ansible.builtin.file:
+            path: "{{ mc_home }}/server"
+            state: directory
+            mode: "0755"
+
+        - name: Read which pack is installed
+          ansible.builtin.slurp:
+            src: "{{ mc_home }}/server/.modpack"
+          register: mc_installed
+          failed_when: false
+
+        - name: Work out which pack is wanted
+          ansible.builtin.set_fact:
+            mc_pack_id: >-
+              {{ mc_modpack.source }}:{{ mc_modpack.pack | default(mc_modpack.url) }}:{{ mc_modpack.version | default('latest') }}
+            mc_pack_have: "{{ (mc_installed.content | default('') | b64decode) | trim }}"
+
+        # Writes server.jar/run.sh, mods/ and config/ into the server dir.
+        - name: Install the Modrinth pack
+          ansible.builtin.command: >-
+            mrpack-install {{ mc_modpack.pack }}
+            {{ mc_modpack.version | default('') }}
+            --server-dir {{ mc_home }}/server
+          when: mc_modpack.source == 'modrinth' and mc_pack_id != mc_pack_have
+          register: mc_mrpack
+          changed_when: true
+
+        - name: Install the CurseForge server pack
+          when: mc_modpack.source == 'curseforge' and mc_pack_id != mc_pack_have
+          register: mc_curse
+          changed_when: true
+          ansible.builtin.shell: |
+            set -e
+            tmp=$(mktemp -d)
+            trap 'rm -rf "$tmp"' EXIT
+            curl -fsSL -o "$tmp/pack.zip" '{{ mc_modpack.url }}'
+            unzip -q "$tmp/pack.zip" -d "$tmp/x"
+            # Server packs usually wrap everything in one top-level folder.
+            src="$tmp/x"
+            [ "$(ls -A "$src" | wc -l)" = 1 ] && [ -d "$src/$(ls -A "$src")" ] && src="$src/$(ls -A "$src")"
+            cp -a "$src"/. "{{ mc_home }}/server/"
+          args:
+            executable: /bin/bash
+
+        - name: Remember which pack is installed
+          ansible.builtin.copy:
+            content: "{{ mc_pack_id }}\n"
+            dest: "{{ mc_home }}/server/.modpack"
+            mode: "0644"
+          when: mc_pack_id != mc_pack_have
+
+        - name: Accept the Mojang EULA
+          ansible.builtin.copy:
+            content: "eula=true\n"
+            dest: "{{ mc_home }}/server/eula.txt"
+            mode: "0644"
+
+        - name: Set the server port
+          ansible.builtin.lineinfile:
+            path: "{{ mc_home }}/server/server.properties"
+            regexp: '^server-port='
+            line: "server-port={{ mc_port }}"
+            create: true
+            mode: "0644"
+
+    - name: Template the launcher script
+      ansible.builtin.template:
+        src: minecraft.sh.j2
+        dest: "{{ mc_home }}/minecraft.sh"
+        owner: "{{ mc_user }}"
+        group: "{{ mc_user }}"
+        mode: "0755"
+
+    - name: Quiet the stock login banner
+      ansible.builtin.include_tasks: tasks/quiet-login.yml
+      vars:
+        quiet_login_homes: "{{ ['/root', mc_home] }}"
+
+    - name: Ensure cron is running
+      ansible.builtin.service:
+        name: cron
+        state: started
+        enabled: true
+
+    # Root writes it: only root can edit someone else's crontab.
+    - name: Start the server at boot
+      ansible.builtin.cron:
+        name: start minecraft
+        user: "{{ mc_user }}"
+        special_time: reboot
+        job: "{{ mc_home }}/minecraft.sh start"
+
+    # Root shortcut: `minecraft` drops into the minecraft user's shell,
+    # `minecraft attach` / `minecraft logs` etc. run the launcher directly.
+    - name: Install the minecraft switch script
+      ansible.builtin.copy:
+        dest: /usr/local/bin/minecraft
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/usr/bin/env sh
+          # Managed by Ansible.
+          [ $# -eq 0 ] && exec su - {{ mc_user }}
+          exec su - {{ mc_user }} -c "{{ mc_home }}/minecraft.sh $*"
+
+    - name: Ensure fish functions dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/functions
+        state: directory
+        mode: "0755"
+
+    - name: Show how to reach the minecraft user on root login
+      ansible.builtin.template:
+        src: minecraft-root-greeting.fish.j2
+        dest: /root/.config/fish/functions/fish_greeting.fish
+        mode: "0644"

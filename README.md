@@ -1,8 +1,13 @@
 # Vanguard
 
 Ansible for the clients hosted on **hosting.thekrew.app**. Each client is an
-LXC reached over SSH on its own port (DNAT). Every client gets the same
+LXC reached over SSH on its own port; all access is guarded by a MikroTik CHR
+router (no DNAT). Every client gets the same
 **baseline**; then clients are grouped and each **group** installs its own apps.
+
+> Full documentation lives in [`docs/`](docs/Home.md) — an Obsidian vault (open the
+> folder as a vault): architecture, per-app guides, runbooks, troubleshooting,
+> hosts and variable references.
 
 ## Files
 
@@ -12,17 +17,24 @@ group_vars/
   all.yml                shared config: host, admin user, key, packages
   web.yml                vars for the `web` group
   steamcmd.yml           vars for the `steamcmd` group (steam user, deps)
+  foundryvtt.yml         vars for the `foundryvtt` group (foundry user, version default)
+  minecraft.yml          vars + documented defaults for the `minecraft` group
 host_vars/
   palworld.yml           which game(s) that client installs
+  <client>.yml           per-client: foundry_version, or mc_* settings
 vars/
   steam_apps.yml         every SteamCMD dedicated server, by slug
 playbooks/
   baseline.yml           runs on all clients
   web.yml                installs the web group's apps
   steamcmd.yml           installs SteamCMD + the client's game servers
+  foundry.yml            installs the FoundryVTT launcher
+  minecraft.yml          installs a modpack Minecraft server
+  tasks/quiet-login.yml  shared: strips the stock Debian login banner
   templates/             files rendered onto the clients
   site.yml               baseline + every group
 mise.toml / justfile     tooling + task shortcuts
+docs/                    Obsidian vault with the full documentation
 ```
 
 ## Game servers (`steamcmd` group)
@@ -94,6 +106,136 @@ sudo -iu steam ./palworld-server.sh logs 200
 `stop_timeout`, `restart_delay`, `autorestart`, `session` and `boot` are the
 remaining knobs — see `group_vars/steamcmd.yml` for the defaults.
 
+## FoundryVTT (`foundryvtt` group)
+
+`just install foundry` (all clients in the group, or
+`ansible-playbook playbooks/foundry.yml --limit <client>` for one) sets up an
+unprivileged **`foundry`** user and a launcher; it does **not** download
+Foundry itself (the build is licensed — unpack it yourself).
+
+What it does on each client:
+
+- creates `foundry` with fish as its shell, **no sudo, locked password** — you
+  reach it by SSHing in as root and running `foundry` (see below);
+- installs the latest Node.js LTS with mise and sets it as that user's global
+  (`mise use --global node@lts`); re-running after a new LTS ships moves it
+  forward;
+- renders `~foundry/foundry.sh`, a tmux launcher with crash respawn and logs in
+  `/var/log/foundry/foundry.log` (previous run kept as `.log.old`), plus an
+  `@reboot` line in the `foundry` crontab.
+
+Paths the launcher expects (edit the CONFIG block in the template to change):
+
+```
+~foundry/foundryvtt     unpacked Foundry build (needs main.js)
+~foundry/foundrydata    user data, passed as --dataPath
+```
+
+The node binary is resolved at start with `eval mise which node`, so the global
+mise version is always used — no version baked into the script.
+
+### Foundry version
+
+Foundry v13+ has `main.js` at the install root; v12 and older nest it under
+`resources/app/`. The playbook picks the template from `foundry_version`:
+
+```yaml
+# host_vars/<client>.yml — default is 13 (group_vars/foundryvtt.yml)
+foundry_version: 12     # -> templates/foundry-legacy.sh.j2
+```
+
+### Using it
+
+As root on the client, `foundry` is a switch script:
+
+```bash
+foundry                  # become the foundry user (su - foundry)
+foundry status           # or run the launcher directly from root:
+foundry start            #   start | stop | restart | attach | logs [n]
+```
+
+As the `foundry` user: `./foundry.sh start|stop|restart|status|attach|logs [n]`.
+Detach from `attach` with `Ctrl-b d`.
+
+Existing install in `/root`? Move `foundryvtt` and `foundrydata` to
+`/home/foundry/` and `chown -R foundry:foundry` them first — the playbook
+doesn't touch live data.
+
+## Minecraft (`minecraft` group)
+
+`just install minecraft` sets up a modded server from a **Modrinth** or
+**CurseForge** pack, run by an unprivileged **`minecraft`** user (no sudo,
+locked password — `minecraft` as root switches to it, like `foundry` above).
+Java comes from mise, version set per host.
+
+Everything is configured in `host_vars/<client>.yml`; defaults and a full
+example are in `group_vars/minecraft.yml`:
+
+```yaml
+mc_eula: true            # required — you accept https://aka.ms/MinecraftEULA
+mc_java: temurin-21      # any mise java spec; 1.20.5+ needs 21, 1.18-1.20.4 needs 17
+mc_memory: 6G            # -Xms/-Xmx
+mc_port: 25565           # written into server.properties
+mc_modpack:
+  source: modrinth       # or curseforge
+  pack: adrenaserver     # modrinth: slug, project id, or .mrpack URL/path
+  version: 1.2.3         # optional, default latest
+# curseforge instead:
+#   source: curseforge
+#   url: https://mediafilez.forgecdn.net/files/.../ServerFiles-1.2.zip
+#   version: "1.2"       # optional label; change it to force a reinstall
+```
+
+- **Modrinth** packs install with
+  [mrpack-install](https://github.com/nothub/mrpack-install) (fetched to
+  `/usr/local/bin`), which also sets up the Fabric/Forge/NeoForge/Quilt server.
+- **CurseForge** needs the pack's **Server Files** zip, not the client modpack:
+  client manifests need an API key and don't contain the server. The zip is
+  unpacked into `~minecraft/server`.
+- The installed pack is remembered in `~minecraft/server/.modpack`; changing
+  `pack`/`url`/`version` reinstalls mods and config over the server dir. Worlds
+  and `server.properties` are kept.
+- The playbook **refuses to run** unless `mc_eula: true` and a valid
+  `mc_modpack` are set.
+
+The launcher `~minecraft/minecraft.sh` works like the Steam and Foundry ones
+(tmux, crash respawn, `@reboot`, logs in `/var/log/minecraft/minecraft.log`). It
+runs `./run.sh nogui` for Forge/NeoForge, otherwise `-jar` on
+`fabric-server-launch.jar`, `quilt-server-launch.jar` or `server.jar` (override
+with `mc_launch`). `stop` types `stop` into the console so the world saves;
+`mc_stop_timeout` (default 120s) is how long it waits.
+
+```bash
+minecraft status | start | stop | restart | attach | logs 200   # as root
+./minecraft.sh cmd 'say hi'                                     # as minecraft
+```
+
+`host_vars/allthemons.yml` is the worked example (All the Mons) — copy it. Add a host by uncommenting/adding it under `minecraft:` in `inventory.yml`,
+creating `host_vars/<name>.yml`, then `just baseline <name>` and
+`ansible-playbook playbooks/minecraft.yml --limit <name>`.
+
+## Login messages
+
+Hosts running Foundry, Minecraft or Steam servers greet users with a short
+how-to instead of the stock Debian banner:
+
+- **root** (Foundry/Minecraft hosts): how to switch to the app user and run the
+  launcher from root;
+- **app user** (`foundry`, `minecraft`, `steam`): the launcher commands, log and
+  data paths, and what starts at boot.
+
+They are fish `fish_greeting` functions rendered from
+`playbooks/templates/*-greeting.fish.j2`. `playbooks/tasks/quiet-login.yml`
+empties `/etc/motd`, disables the scripts in `/etc/update-motd.d` (kernel
+banner) and adds `~/.hushlogin` for root and the app user (no last-login line).
+It is **not** in baseline, so hosts without these apps keep the defaults. To
+restore a host: delete the `.hushlogin` files, restore `/etc/motd`, and
+`chmod +x /etc/update-motd.d/*`.
+
+> Don't reload `ssh` from a playbook on these LXCs — socket-activated sshd
+> failed to rebind on `SIGHUP` and dropped new connections. That's why the
+> banner is silenced with `.hushlogin` rather than `PrintLastLog`.
+
 ## Setup
 
 ```bash
@@ -117,6 +259,14 @@ just check web         # dry-run playbooks/web.yml
 
 Add a line under the right group in `inventory.yml` with its SSH port, drop its
 key at `~/.ssh/vanguard/<name>`, then `just baseline <name>`.
+
+## Test on a throwaway LXC first
+
+Foundry and Minecraft hosts are live platforms. Add a dummy client to the group
+(e.g. `dummyvtt` under `foundryvtt:`), `just baseline <name>`, then
+`just check foundry <name>` and `ansible-playbook playbooks/foundry.yml --limit <name>`.
+Note `--check` fails at the first task that runs as the new user (it doesn't
+exist in dry-run mode) — that's expected, do a real run on the dummy.
 
 ## Add a group
 

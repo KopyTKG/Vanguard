@@ -15,3 +15,6 @@ mise.local.toml
 # Editor / OS
 .DS_Store
 *.swp
+
+# Obsidian (docs/ is the vault; docs/.gitignore covers its workspace files)
+/.obsidian/

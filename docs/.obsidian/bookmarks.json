@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "type": "file",
+      "path": "Home.md",
+      "title": "Home"
+    },
+    {
+      "type": "file",
+      "path": "01 Overview/Command Cheatsheet.md",
+      "title": "Cheatsheet"
+    },
+    {
+      "type": "file",
+      "path": "05 Runbooks/Troubleshooting.md",
+      "title": "Troubleshooting"
+    }
+  ]
+}

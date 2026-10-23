@@ -1,0 +1,13 @@
+# Managed by Ansible (playbooks/minecraft.yml) — local edits get overwritten.
+function fish_greeting
+    set_color --bold cyan
+    echo "{{ inventory_hostname }} — Minecraft host ({{ mc_modpack.pack | default(mc_modpack.url | default('')) }})"
+    set_color normal
+    echo
+    echo "  minecraft               switch to the {{ mc_user }} user"
+    echo "  minecraft status|start|stop|restart|attach|logs [n]"
+    echo "                          run the launcher as {{ mc_user }} from here"
+    echo
+    echo "  server files live under {{ mc_home }}/server — work there as {{ mc_user }}, not root"
+    echo
+end

@@ -9,7 +9,6 @@ generic:
   hosts:
     esl: { ansible_port: 2225 }
     ts-server: { ansible_port: 2200 }
-    #allthemons: { ansible_port: 2204 }
     grafana: { ansible_port: 2206 }
     proxy: { ansible_port: 2207 }
     jenkins: { ansible_port: 2208 }
@@ -22,6 +21,12 @@ foundryvtt:
   hosts:
     foundry: { ansible_port: 2210 } # host_vars/foundry.yml
     cybervtt: { ansible_port: 2211 } # host_vars/cybervtt.yml
+
+minecraft:
+  hosts:
+    #allthemons: { ansible_port: 2204 } # host_vars/allthemons.yml — worked example, uncomment to deploy
+    # mcdummy: { ansible_port: 2213 } # throwaway test host, same shape
+    {}
 
 web:
   hosts:
