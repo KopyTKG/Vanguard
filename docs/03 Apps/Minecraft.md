@@ -6,7 +6,7 @@ tags: [app]
 
 # Minecraft (`minecraft` group)
 
-Modded Minecraft servers from a **Modrinth** or **CurseForge** pack, run by an unprivileged `minecraft` user with Java from mise (version set per host). `just install minecraft` → `playbooks/minecraft.yml`.
+Minecraft servers — **vanilla**, or modded from a **Modrinth** or **CurseForge** pack — run by an unprivileged `minecraft` user with Java from mise (version set per host). `just install minecraft` → `playbooks/minecraft.yml`.
 
 ## Minimum host config
 
@@ -20,7 +20,7 @@ mc_modpack:
   pack: adrenaserver
 ```
 
-The playbook **asserts** `mc_eula` and a valid `mc_modpack` before touching anything. Full option list: [[Minecraft Variables]].
+The playbook **asserts** `mc_eula` and a valid `mc_modpack` (`vanilla` + `version`, `modrinth` + `pack`, or `curseforge` + `url`) before touching anything. Full option list: [[Minecraft Variables]].
 
 ## Java version cheat sheet
 
@@ -34,6 +34,23 @@ The playbook **asserts** `mc_eula` and a valid `mc_modpack` before touching anyt
 Any mise java spec works (`zulu-21`, `21`, ...).
 
 ## Pack sources
+
+### Vanilla
+Downloads the official `server.jar` straight from Mojang (version manifest at `piston-meta.mojang.com`) and verifies its sha1. No modpack tooling involved.
+
+```yaml
+mc_modpack: { source: vanilla, version: "1.21.4" }    # or version: latest
+```
+
+`version` is required. `latest` means the newest **release** at install time (snapshots are not picked); like the other sources it is remembered in `.modpack`, so `latest` won't auto-upgrade later — set an explicit version to move. Pick `mc_java` to match (table above). The launcher runs `java -jar server.jar nogui`.
+
+```yaml
+# minimal vanilla host
+mc_eula: true
+mc_java: temurin-21
+mc_memory: 4G
+mc_modpack: { source: vanilla, version: "1.21.4" }
+```
 
 ### Modrinth
 `mrpack-install` (downloaded to `/usr/local/bin`) installs the `.mrpack` and the right server (Fabric / Forge / NeoForge / Quilt) into `~minecraft/server`.
@@ -65,7 +82,7 @@ The zip is unpacked into `~minecraft/server`; a single top-level folder is flatt
 
 ```bash
 minecraft status | start | stop | restart | attach | logs 200      # root
-./minecraft.sh cmd 'say hi'                                        # minecraft user
+minecraft.sh cmd 'say hi'                                        # minecraft user
 ```
 
 ## Layout
@@ -107,6 +124,6 @@ The pack URL is real (ServerFiles 1.3.0, ~1 GB). The host is in the `minecraft` 
 [[Add a Client]] with group `minecraft`, create `host_vars/<name>.yml`, then `just baseline <name>` and `ansible-playbook playbooks/minecraft.yml --limit <name>`. Try a small pack on a [[Test on a Dummy LXC]] first.
 
 > [!bug] Not yet exercised on a real host
-> Written and syntax/render-checked only. Unverified assumptions: the exact `mrpack-install <pack> <version> --server-dir` invocation, the jar names above, CurseForge zip layout. First dummy run should confirm them — fix here and in the playbook.
+> Written and syntax/render-checked only. The vanilla download logic (manifest lookup, version pick, sha1-checked jar) was run against Mojang from a workstation and works; the install-on-host path was not (the test LXC was unreachable). Unverified assumptions: the exact `mrpack-install <pack> <version> --server-dir` invocation, the jar names above, CurseForge zip layout. First dummy run should confirm them — fix here and in the playbook.
 
 Related: [[Launcher Scripts]], [[Unprivileged App Users]], [[Login Messages]].

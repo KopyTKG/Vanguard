@@ -63,7 +63,7 @@ foundry                         # root → become foundry
 foundry start | stop | restart | status | attach | logs 200
 ```
 
-As `foundry`: `./foundry.sh <same commands>`. `stop` sends SIGTERM (Foundry has no console quit).
+As `foundry`: `foundry.sh <same commands>`. `stop` sends SIGTERM (Foundry has no console quit).
 
 ## Moving an existing install
 

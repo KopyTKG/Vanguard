@@ -27,7 +27,7 @@ tags: [reference]
 |---|---|---|
 | root | `foundry` | switch to the `foundry` user |
 | root | `foundry status \| start \| stop \| restart \| attach \| logs [n]` | run the launcher from root |
-| foundry | `./foundry.sh start\|stop\|restart\|status\|attach\|logs [n]` | launcher |
+| foundry | `foundry.sh start\|stop\|restart\|status\|attach\|logs [n]` | launcher |
 
 ## On a Minecraft host
 
@@ -35,16 +35,20 @@ tags: [reference]
 |---|---|---|
 | root | `minecraft` | switch to the `minecraft` user |
 | root | `minecraft status \| start \| stop \| restart \| attach \| logs [n]` | run the launcher from root |
-| minecraft | `./minecraft.sh cmd 'say hi'` | type into the server console |
-| minecraft | `./minecraft.sh start\|stop\|restart\|status\|attach\|logs [n]` | launcher |
+| minecraft | `minecraft.sh cmd 'say hi'` | type into the server console |
+| minecraft | `minecraft.sh start\|stop\|restart\|status\|attach\|logs [n]` | launcher |
 
 ## On a Steam host
 
 ```bash
-sudo -iu steam ./<slug>-server.sh start|stop|restart|status|attach|logs [n]
-sudo -iu steam ./<slug>-server.sh cmd 'say hi'
+sudo -iu steam <slug>-server.sh start|stop|restart|status|attach|logs [n]
+sudo -iu steam <slug>-server.sh cmd 'say hi'
 sudo -iu steam ./steamcmd-install.sh <slug>      # install / update a game
 ```
+
+## Tab completion
+
+In fish, `Tab` after any launcher (`foundry.sh`, `minecraft.sh`, `<slug>-server.sh`, or root's `foundry` / `minecraft`) completes the subcommands; after `logs` it offers line counts, after Minecraft's `cmd` common console commands. See [[Launcher Scripts]].
 
 ## tmux inside `attach`
 

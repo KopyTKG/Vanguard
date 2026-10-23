@@ -19,10 +19,16 @@ Defaults live in `group_vars/minecraft.yml`; override per host in `host_vars/<cl
 | `mc_launch` | *(auto)* | | force a specific server jar |
 | `mc_eula` | `false` | **yes → true** | accept https://aka.ms/MinecraftEULA |
 | `mc_modpack` | `{}` | **yes** | see below |
+| `mc_pack_name` | *(derived)* | | label shown in login greetings |
 
 ## `mc_modpack`
 
 ```yaml
+# Vanilla (official Mojang server.jar)
+mc_modpack:
+  source: vanilla
+  version: <"1.21.4" | latest>                   # required; latest = newest release
+
 # Modrinth
 mc_modpack:
   source: modrinth
@@ -36,7 +42,7 @@ mc_modpack:
   version: <label>                               # optional; change to force reinstall
 ```
 
-The asserts in `minecraft.yml` fail the run if `mc_eula` isn't true, `source` isn't `modrinth`/`curseforge`, or the source's required field is missing.
+The asserts in `minecraft.yml` fail the run if `mc_eula` isn't true, `source` isn't `vanilla`/`modrinth`/`curseforge`, or the source's required field is missing.
 
 Worked example: `host_vars/allthemons.yml` — [[Minecraft#Worked example allthemons]].
 

@@ -46,6 +46,24 @@ commands              ← start stop restart attach status cmd logs
 
 Logs: current run `/var/log/<app>/<app>.log`, previous run `.log.old` (rotated on every `start`).
 
+## No `./` needed
+
+Each app user's fish config appends the home directory to the **end** of `PATH` (`conf.d/launcher-path.fish`), so `foundry.sh start`, `minecraft.sh logs` and `avorion-server.sh attach` work from anywhere. It goes last on purpose: `fish_add_path` would put it *ahead* of `/usr/bin`, letting a stray file in the home shadow a system command. Only fish sessions get it — cron and `su -c` keep using full paths.
+
+## Tab completion (fish)
+
+Every launcher gets fish completions from one shared template, `launcher-completions.fish.j2`, installed as `~/.config/fish/conf.d/launcher-completions.fish`:
+
+| Typed | Completes |
+|---|---|
+| `foundry.sh <Tab>` | `start stop restart attach status cmd logs`, each with a description |
+| `foundry.sh logs <Tab>` | `50 200 1000` |
+| `minecraft.sh cmd <Tab>` | common console commands (`say save-all list whitelist op ...`) |
+| `<slug>-server.sh <Tab>` | the same subcommands, for every Steam server |
+| `foundry <Tab>` / `minecraft <Tab>` (root) | the same subcommands |
+
+It lives in `conf.d/` (always sourced) rather than `completions/` because fish only autoloads `completions/` by command name, which doesn't work for scripts run as `./name.sh`. The completion is registered for the script's basename, so `foundry.sh`, `foundry.sh` and `/home/foundry/foundry.sh` all match.
+
 ## Runtime resolution — `eval mise which`
 
 Foundry and Minecraft do not hardcode a Node/Java path. At start the script runs:

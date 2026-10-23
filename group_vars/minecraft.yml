@@ -29,7 +29,11 @@ mc_stop_timeout: 120 # seconds `stop` waits for the world to save
 # playbook refuses to continue otherwise.
 mc_eula: false
 
-# Modpack to install into ~/server. Required per host. Two sources:
+# Modpack to install into ~/server. Required per host. Three sources:
+#
+#   mc_modpack:                      # Vanilla, straight from Mojang
+#     source: vanilla
+#     version: "1.21.4"               # or "latest" (= newest release at install time)
 #
 #   mc_modpack:                      # Modrinth .mrpack, via mrpack-install
 #     source: modrinth
@@ -46,3 +50,8 @@ mc_eula: false
 # Changing pack/version/url reinstalls the pack over ~/server (mods/config are
 # replaced, worlds and server.properties are kept).
 mc_modpack: {}
+
+# Pretty name for the login greetings; derived from mc_modpack.
+mc_pack_name: >-
+  {{ ('vanilla ' ~ mc_modpack.version) if mc_modpack.source | default('') == 'vanilla'
+     else (mc_modpack.pack | default(mc_modpack.url | default(''))) }}

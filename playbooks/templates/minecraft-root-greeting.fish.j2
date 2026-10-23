@@ -1,7 +1,7 @@
 # Managed by Ansible (playbooks/minecraft.yml) — local edits get overwritten.
 function fish_greeting
     set_color --bold cyan
-    echo "{{ inventory_hostname }} — Minecraft host ({{ mc_modpack.pack | default(mc_modpack.url | default('')) }})"
+    echo "{{ inventory_hostname }} — Minecraft host ({{ mc_pack_name }})"
     set_color normal
     echo
     echo "  minecraft               switch to the {{ mc_user }} user"

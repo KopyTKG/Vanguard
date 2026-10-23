@@ -1,5 +1,5 @@
 ---
-# Install a modded Minecraft server (Modrinth or CurseForge pack) on the
+# Install a Minecraft server (vanilla, or a Modrinth/CurseForge modpack) on the
 # minecraft clients, running as an unprivileged `minecraft` user with Java from
 # mise. Run: `just install minecraft`
 #
@@ -14,12 +14,14 @@
       ansible.builtin.assert:
         that:
           - mc_eula | bool
-          - mc_modpack.source | default('') in ['modrinth', 'curseforge']
+          - mc_modpack.source | default('') in ['vanilla', 'modrinth', 'curseforge']
+          - mc_modpack.source != 'vanilla' or mc_modpack.version is defined
           - mc_modpack.source != 'modrinth' or mc_modpack.pack is defined
           - mc_modpack.source != 'curseforge' or mc_modpack.url is defined
         fail_msg: >-
           Set mc_eula: true (you accept https://aka.ms/MinecraftEULA) and an
-          mc_modpack (source: modrinth + pack, or source: curseforge + url) in
+          mc_modpack (source: vanilla + version, source: modrinth + pack, or
+          source: curseforge + url) in
           host_vars/{{ inventory_hostname }}.yml. See group_vars/minecraft.yml.
         quiet: true
 
@@ -70,6 +72,30 @@
             create: true
             mode: "0644"
 
+        - name: Ensure fish conf.d dir for minecraft
+          ansible.builtin.file:
+            path: "{{ mc_home }}/.config/fish/conf.d"
+            state: directory
+            mode: "0755"
+
+        - name: Put the home dir on PATH, so scripts run without ./
+          ansible.builtin.copy:
+            dest: "{{ mc_home }}/.config/fish/conf.d/launcher-path.fish"
+            mode: "0644"
+            content: |
+              # Managed by Ansible. Appended to the very end of PATH so it can't shadow
+              # system commands (fish_add_path would put it ahead of /usr/bin).
+              contains -- $HOME $PATH; or set --global --export --append PATH $HOME
+
+        - name: Tab-complete the launcher
+          ansible.builtin.template:
+            src: launcher-completions.fish.j2
+            dest: "{{ mc_home }}/.config/fish/conf.d/launcher-completions.fish"
+            mode: "0644"
+          vars:
+            comp_cmds: [minecraft.sh]
+            comp_cmd_hints: [say, save-all, save-off, save-on, list, whitelist, op, deop, kick, ban, pardon, tp, gamemode, difficulty, weather, time]
+
         - name: Show how to use the launcher on login
           ansible.builtin.template:
             src: minecraft-greeting.fish.j2
@@ -98,8 +124,46 @@
         - name: Work out which pack is wanted
           ansible.builtin.set_fact:
             mc_pack_id: >-
-              {{ mc_modpack.source }}:{{ mc_modpack.pack | default(mc_modpack.url) }}:{{ mc_modpack.version | default('latest') }}
+              {{ mc_modpack.source }}:{{ mc_modpack.pack | default(mc_modpack.url | default('')) }}:{{ mc_modpack.version | default('latest') }}
             mc_pack_have: "{{ (mc_installed.content | default('') | b64decode) | trim }}"
+
+        # Vanilla: Mojang publishes every server jar through a version manifest.
+        # `latest` resolves to the current release; the jar's sha1 is checked.
+        - name: Install the vanilla server
+          when: mc_modpack.source == 'vanilla' and mc_pack_id != mc_pack_have
+          block:
+            - name: Fetch Mojang's version manifest
+              ansible.builtin.uri:
+                url: https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
+                return_content: true
+              register: mc_manifest
+
+            - name: Pick the wanted version
+              ansible.builtin.set_fact:
+                mc_vanilla_version: >-
+                  {{ mc_manifest.json.latest.release if mc_modpack.version == 'latest' else mc_modpack.version }}
+
+            - name: Check Mojang knows that version
+              ansible.builtin.assert:
+                that: mc_manifest.json.versions | selectattr('id', 'equalto', mc_vanilla_version) | list | length == 1
+                fail_msg: "Minecraft {{ mc_vanilla_version }} is not in Mojang's version manifest."
+                quiet: true
+
+            - name: Fetch that version's metadata
+              ansible.builtin.uri:
+                url: "{{ (mc_manifest.json.versions | selectattr('id', 'equalto', mc_vanilla_version) | first).url }}"
+                return_content: true
+              register: mc_vmeta
+
+            - name: Download server.jar
+              ansible.builtin.get_url:
+                url: "{{ mc_vmeta.json.downloads.server.url }}"
+                dest: "{{ mc_home }}/server/server.jar"
+                checksum: "sha1:{{ mc_vmeta.json.downloads.server.sha1 }}"
+                mode: "0644"
+                force: true
+              register: mc_vanilla_jar
+              changed_when: true
 
         # Writes server.jar/run.sh, mods/ and config/ into the server dir.
         - name: Install the Modrinth pack
@@ -195,6 +259,21 @@
         path: /root/.config/fish/functions
         state: directory
         mode: "0755"
+
+    - name: Ensure fish conf.d dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/conf.d
+        state: directory
+        mode: "0755"
+
+    - name: Tab-complete the minecraft switch script
+      ansible.builtin.template:
+        src: launcher-completions.fish.j2
+        dest: /root/.config/fish/conf.d/launcher-completions.fish
+        mode: "0644"
+      vars:
+        comp_cmds: [minecraft]
+        comp_cmd_hints: [say, save-all, save-off, save-on, list, whitelist, op, deop, kick, ban, pardon, tp, gamemode, difficulty, weather, time]
 
     - name: Show how to reach the minecraft user on root login
       ansible.builtin.template:

@@ -5,7 +5,7 @@ tags: [runbook]
 
 # Daily Operations
 
-Examples use Foundry; Minecraft is identical with `minecraft` and Steam with `sudo -iu steam ./<slug>-server.sh`.
+Examples use Foundry; Minecraft is identical with `minecraft` and Steam with `sudo -iu steam <slug>-server.sh`.
 
 ## Is it up?
 
@@ -31,8 +31,8 @@ foundry attach                  # leave with Ctrl-b d  (NOT Ctrl-c)
 
 ```bash
 minecraft                       # become minecraft
-./minecraft.sh cmd 'say server restarting in 5 minutes'
-./minecraft.sh cmd 'save-all'
+minecraft.sh cmd 'say server restarting in 5 minutes'
+minecraft.sh cmd 'save-all'
 ```
 
 ## Server crashed?

@@ -57,6 +57,29 @@
             state: directory
             mode: "0755"
 
+        - name: Ensure fish conf.d dir for foundry
+          ansible.builtin.file:
+            path: "{{ foundry_home }}/.config/fish/conf.d"
+            state: directory
+            mode: "0755"
+
+        - name: Put the home dir on PATH, so scripts run without ./
+          ansible.builtin.copy:
+            dest: "{{ foundry_home }}/.config/fish/conf.d/launcher-path.fish"
+            mode: "0644"
+            content: |
+              # Managed by Ansible. Appended to the very end of PATH so it can't shadow
+              # system commands (fish_add_path would put it ahead of /usr/bin).
+              contains -- $HOME $PATH; or set --global --export --append PATH $HOME
+
+        - name: Tab-complete the launcher
+          ansible.builtin.template:
+            src: launcher-completions.fish.j2
+            dest: "{{ foundry_home }}/.config/fish/conf.d/launcher-completions.fish"
+            mode: "0644"
+          vars:
+            comp_cmds: [foundry.sh]
+
         - name: Show how to use the launcher on login
           ansible.builtin.template:
             src: foundry-greeting.fish.j2
@@ -118,6 +141,20 @@
         path: /root/.config/fish/functions
         state: directory
         mode: "0755"
+
+    - name: Ensure fish conf.d dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/conf.d
+        state: directory
+        mode: "0755"
+
+    - name: Tab-complete the foundry switch script
+      ansible.builtin.template:
+        src: launcher-completions.fish.j2
+        dest: /root/.config/fish/conf.d/launcher-completions.fish
+        mode: "0644"
+      vars:
+        comp_cmds: [foundry]
 
     - name: Show how to reach the foundry user on root login
       ansible.builtin.template:

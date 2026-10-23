@@ -6,14 +6,14 @@ function fish_greeting
     echo
 {% for slug in steam_servers.keys() | sort %}
     echo "  {{ slug }}"
-    echo "    ./{{ slug }}-server.sh start|stop|restart|status"
-    echo "    ./{{ slug }}-server.sh attach        (detach: Ctrl-b d)"
-    echo "    ./{{ slug }}-server.sh cmd <text>    (type into the console)"
-    echo "    ./{{ slug }}-server.sh logs [n]      (/var/log/steamcmd/{{ slug }}.log)"
+    echo "    {{ slug }}-server.sh start|stop|restart|status"
+    echo "    {{ slug }}-server.sh attach        (detach: Ctrl-b d)"
+    echo "    {{ slug }}-server.sh cmd <text>    (type into the console)"
+    echo "    {{ slug }}-server.sh logs [n]      (/var/log/steamcmd/{{ slug }}.log)"
     echo "    README: ~/{{ slug }}/README.txt"
     echo
 {% endfor %}
-    echo "  update/reinstall:  ./steamcmd-install.sh <slug>"
+    echo "  update/reinstall:  steamcmd-install.sh <slug>"
     echo "  servers start at boot from this user's crontab (crontab -l)"
     echo
 end

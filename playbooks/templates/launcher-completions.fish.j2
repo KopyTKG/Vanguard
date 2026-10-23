@@ -1,0 +1,19 @@
+# Managed by Ansible — local edits get overwritten.
+# Tab completion for the launcher scripts. Lives in conf.d (always sourced)
+# rather than completions/ (autoloaded by command name), because the scripts
+# are normally typed as ./name.sh and are not on PATH.
+{% for c in comp_cmds %}
+
+complete -c {{ c }} -f
+complete -c {{ c }} -n __fish_use_subcommand -a start -d 'start in a tmux session (attaches if already running)'
+complete -c {{ c }} -n __fish_use_subcommand -a stop -d 'shut down cleanly'
+complete -c {{ c }} -n __fish_use_subcommand -a restart -d 'stop, then start'
+complete -c {{ c }} -n __fish_use_subcommand -a attach -d 'open the console (detach: Ctrl-b d)'
+complete -c {{ c }} -n __fish_use_subcommand -a status -d 'running or stopped'
+complete -c {{ c }} -n __fish_use_subcommand -a cmd -d 'type a line into the console'
+complete -c {{ c }} -n __fish_use_subcommand -a logs -d 'show the log (default last 200 lines)'
+complete -c {{ c }} -n '__fish_seen_subcommand_from logs' -a '50 200 1000' -d 'lines'
+{% if comp_cmd_hints | default([]) | length > 0 %}
+complete -c {{ c }} -n '__fish_seen_subcommand_from cmd' -a '{{ comp_cmd_hints | join(' ') }}' -d 'console command'
+{% endif %}
+{% endfor %}

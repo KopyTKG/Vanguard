@@ -154,7 +154,7 @@ foundry status           # or run the launcher directly from root:
 foundry start            #   start | stop | restart | attach | logs [n]
 ```
 
-As the `foundry` user: `./foundry.sh start|stop|restart|status|attach|logs [n]`.
+As the `foundry` user: `foundry.sh start|stop|restart|status|attach|logs [n]`.
 Detach from `attach` with `Ctrl-b d`.
 
 Existing install in `/root`? Move `foundryvtt` and `foundrydata` to
@@ -163,8 +163,8 @@ doesn't touch live data.
 
 ## Minecraft (`minecraft` group)
 
-`just install minecraft` sets up a modded server from a **Modrinth** or
-**CurseForge** pack, run by an unprivileged **`minecraft`** user (no sudo,
+`just install minecraft` sets up a **vanilla** server or a modded one from a
+**Modrinth** or **CurseForge** pack, run by an unprivileged **`minecraft`** user (no sudo,
 locked password — `minecraft` as root switches to it, like `foundry` above).
 Java comes from mise, version set per host.
 
@@ -177,7 +177,7 @@ mc_java: temurin-21      # any mise java spec; 1.20.5+ needs 21, 1.18-1.20.4 nee
 mc_memory: 6G            # -Xms/-Xmx
 mc_port: 25565           # written into server.properties
 mc_modpack:
-  source: modrinth       # or curseforge
+  source: modrinth       # or curseforge, or vanilla (then: version: "1.21.4" | latest)
   pack: adrenaserver     # modrinth: slug, project id, or .mrpack URL/path
   version: 1.2.3         # optional, default latest
 # curseforge instead:
@@ -186,6 +186,8 @@ mc_modpack:
 #   version: "1.2"       # optional label; change it to force a reinstall
 ```
 
+- **Vanilla** downloads Mojang's official `server.jar` for `version` (required;
+  `latest` = newest release at install time) and checks its sha1.
 - **Modrinth** packs install with
   [mrpack-install](https://github.com/nothub/mrpack-install) (fetched to
   `/usr/local/bin`), which also sets up the Fabric/Forge/NeoForge/Quilt server.
@@ -207,7 +209,7 @@ with `mc_launch`). `stop` types `stop` into the console so the world saves;
 
 ```bash
 minecraft status | start | stop | restart | attach | logs 200   # as root
-./minecraft.sh cmd 'say hi'                                     # as minecraft
+minecraft.sh cmd 'say hi'                                     # as minecraft
 ```
 
 `host_vars/allthemons.yml` is the worked example (All the Mons) — copy it. Add a host by uncommenting/adding it under `minecraft:` in `inventory.yml`,

@@ -108,6 +108,29 @@
             state: directory
             mode: "0755"
 
+        - name: Ensure fish conf.d dir for steam
+          ansible.builtin.file:
+            path: "{{ steam_home }}/.config/fish/conf.d"
+            state: directory
+            mode: "0755"
+
+        - name: Put the home dir on PATH, so scripts run without ./
+          ansible.builtin.copy:
+            dest: "{{ steam_home }}/.config/fish/conf.d/launcher-path.fish"
+            mode: "0644"
+            content: |
+              # Managed by Ansible. Appended to the very end of PATH so it can't shadow
+              # system commands (fish_add_path would put it ahead of /usr/bin).
+              contains -- $HOME $PATH; or set --global --export --append PATH $HOME
+
+        - name: Tab-complete the server scripts
+          ansible.builtin.template:
+            src: launcher-completions.fish.j2
+            dest: "{{ steam_home }}/.config/fish/conf.d/launcher-completions.fish"
+            mode: "0644"
+          vars:
+            comp_cmds: "{{ steam_servers.keys() | sort | map('regex_replace', '$', '-server.sh') | list }}"
+
         - name: Show how to use the server scripts on login
           ansible.builtin.template:
             src: steam-greeting.fish.j2

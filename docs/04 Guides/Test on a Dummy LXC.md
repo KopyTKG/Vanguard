@@ -24,7 +24,7 @@ Foundry and Minecraft hosts are **live platforms**. Always rehearse on a throwaw
 6. `just check foundry dummyvtt` — expect the first as-user task to fail (see below).
 7. `ansible-playbook playbooks/foundry.yml --limit dummyvtt`
 8. Re-run step 7 — should change almost nothing (the mise task may report changed; [[Troubleshooting]]).
-9. Verify as a user would: `ssh dummyvtt`, read the greeting, `foundry`, `./foundry.sh status`.
+9. Verify as a user would: `ssh dummyvtt`, read the greeting, `foundry`, `foundry.sh status`.
 10. Uncomment the live hosts and roll out.
 
 > [!warning] Expected `--check` failure
