@@ -1,0 +1,42 @@
+---
+# Strip the stock Debian login noise (kernel banner, warranty text, last-login
+# line) so end users only see the how-to greeting from fish_greeting.
+# Included by foundry.yml and steamcmd.yml; not part of baseline, so admin-only
+# hosts keep the defaults.
+- name: Empty the static motd
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/motd
+    mode: "0644"
+
+# pam_motd runs everything executable here on login (10-uname is the
+# "Linux host 7.x ..." banner).
+- name: Find the dynamic motd scripts
+  ansible.builtin.find:
+    paths: /etc/update-motd.d
+    file_type: file
+  register: motd_scripts
+
+- name: Disable the dynamic motd scripts
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    mode: "0644"
+  loop: "{{ motd_scripts.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Drop the dynamic motd cache
+  ansible.builtin.file:
+    path: /run/motd.dynamic
+    state: absent
+
+# sshd skips the last-login line (and the motd) for users with ~/.hushlogin.
+# Done per user instead of PrintLastLog so sshd never needs a reload.
+- name: Hide the last-login line
+  ansible.builtin.file:
+    path: "{{ item }}/.hushlogin"
+    state: touch
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+  loop: "{{ quiet_login_homes }}"

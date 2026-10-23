@@ -13,11 +13,15 @@ generic:
     grafana: { ansible_port: 2206 }
     proxy: { ansible_port: 2207 }
     jenkins: { ansible_port: 2208 }
-    foundry: { ansible_port: 2210 }
 
 steamcmd:
   hosts:
     avorion: { ansible_port: 2209 } # steam_games slug: avorion (host_vars/avorion.yml)
+
+foundryvtt:
+  hosts:
+    foundry: { ansible_port: 2210 } # host_vars/foundry.yml
+    cybervtt: { ansible_port: 2211 } # host_vars/cybervtt.yml
 
 web:
   hosts:

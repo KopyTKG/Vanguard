@@ -1,0 +1,13 @@
+# Managed by Ansible (playbooks/foundry.yml) — local edits get overwritten.
+function fish_greeting
+    set_color --bold cyan
+    echo "{{ inventory_hostname }} — FoundryVTT host (v{{ foundry_version }})"
+    set_color normal
+    echo
+    echo "  foundry                 switch to the {{ foundry_user }} user"
+    echo "  foundry status|start|stop|restart|attach|logs [n]"
+    echo "                          run the launcher as {{ foundry_user }} from here"
+    echo
+    echo "  app files live under {{ foundry_home }} — work there as {{ foundry_user }}, not root"
+    echo
+end

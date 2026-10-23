@@ -3,4 +3,5 @@
 - import_playbook: baseline.yml
 - import_playbook: web.yml
 - import_playbook: steamcmd.yml
+- import_playbook: foundry.yml
 # - import_playbook: db.yml

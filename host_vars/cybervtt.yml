@@ -1,0 +1,3 @@
+---
+# cybervtt — FoundryVTT v12 or older. Consumed by playbooks/foundry.yml.
+foundry_version: 12

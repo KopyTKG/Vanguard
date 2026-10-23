@@ -1,0 +1,17 @@
+# Vars for the `foundryvtt` group. Consumed by playbooks/foundry.yml.
+# Unprivileged user that runs FoundryVTT. No sudo, no password — you reach it
+# by SSHing in as root and running `su - foundry`.
+foundry_user: foundry
+foundry_home: "/home/{{ foundry_user }}"
+
+foundry_packages:
+  # Lets Ansible hand its temp files to the unprivileged foundry user.
+  - acl
+  # The launcher runs foundry under tmux (in baseline_packages), signals it
+  # with pkill, and starts it at boot from the foundry user's crontab.
+  - procps
+  - cron
+
+# Major FoundryVTT version; override per host in host_vars/<client>.yml.
+# v13+ has main.js at the install root, v12 and below under resources/app/.
+foundry_version: 13

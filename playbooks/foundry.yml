@@ -1,0 +1,126 @@
+---
+# Install the FoundryVTT launcher script on the foundry clients, running as an
+# unprivileged `foundry` user.
+# Run: `just install foundry`
+#
+# Set `foundry_version` (host_vars/<client>.yml) to the major version installed:
+# v13+ ships main.js at the install root, v12 and below nest it under
+# resources/app/.
+- name: Install FoundryVTT launcher
+  hosts: foundryvtt
+  become: true
+
+  tasks:
+    - name: Install FoundryVTT dependencies
+      ansible.builtin.apt:
+        name: "{{ foundry_packages }}"
+        state: present
+
+    # No sudo group and no password: root reaches this user with `su - foundry`.
+    - name: Create the foundry user
+      ansible.builtin.user:
+        name: "{{ foundry_user }}"
+        home: "{{ foundry_home }}"
+        create_home: true
+        shell: /usr/bin/fish
+        password: "!"
+        update_password: on_create
+
+    # /var/log needs root to create a new entry under it — the foundry user can
+    # write log files here afterwards, but not make the directory.
+    - name: Create the log directory for the launcher
+      ansible.builtin.file:
+        path: /var/log/foundry
+        state: directory
+        owner: "{{ foundry_user }}"
+        mode: "0755"
+
+    - name: Set up Node.js as the foundry user
+      become_user: "{{ foundry_user }}"
+      block:
+        - name: Ensure fish config dir for foundry
+          ansible.builtin.file:
+            path: "{{ foundry_home }}/.config/fish"
+            state: directory
+            mode: "0755"
+
+        - name: Activate mise in fish
+          ansible.builtin.lineinfile:
+            path: "{{ foundry_home }}/.config/fish/config.fish"
+            line: "mise activate fish | source"
+            create: true
+            mode: "0644"
+
+        - name: Ensure fish functions dir for foundry
+          ansible.builtin.file:
+            path: "{{ foundry_home }}/.config/fish/functions"
+            state: directory
+            mode: "0755"
+
+        - name: Show how to use the launcher on login
+          ansible.builtin.template:
+            src: foundry-greeting.fish.j2
+            dest: "{{ foundry_home }}/.config/fish/functions/fish_greeting.fish"
+            mode: "0644"
+
+        # `lts` tracks the newest LTS line, so a re-run after a new LTS ships
+        # moves the global version forward.
+        - name: Install latest Node.js LTS and set it as the global version
+          ansible.builtin.command: mise use --global node@lts
+          environment:
+            MISE_YES: "1"
+          register: mise_node
+          changed_when: "'node@' in mise_node.stdout or 'install' in mise_node.stderr"
+
+    - name: Template the launcher script
+      ansible.builtin.template:
+        src: "templates/{{ 'foundry.sh.j2' if foundry_version | int > 12 else 'foundry-legacy.sh.j2' }}"
+        dest: "{{ foundry_home }}/foundry.sh"
+        owner: "{{ foundry_user }}"
+        group: "{{ foundry_user }}"
+        mode: "0755"
+
+    - name: Quiet the stock login banner
+      ansible.builtin.include_tasks: tasks/quiet-login.yml
+      vars:
+        quiet_login_homes: "{{ ['/root', foundry_home] }}"
+
+    - name: Ensure cron is running
+      ansible.builtin.service:
+        name: cron
+        state: started
+        enabled: true
+
+    # Root writes it: only root can edit someone else's crontab.
+    - name: Start foundry at boot
+      ansible.builtin.cron:
+        name: start foundry
+        user: "{{ foundry_user }}"
+        special_time: reboot
+        job: "{{ foundry_home }}/foundry.sh start"
+
+    # Root shortcut: `foundry` drops into the foundry user's shell,
+    # `foundry attach` / `foundry logs` etc. run the launcher directly.
+    - name: Install the foundry switch script
+      ansible.builtin.copy:
+        dest: /usr/local/bin/foundry
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/usr/bin/env sh
+          # Managed by Ansible.
+          [ $# -eq 0 ] && exec su - {{ foundry_user }}
+          exec su - {{ foundry_user }} -c "{{ foundry_home }}/foundry.sh $*"
+
+    - name: Ensure fish functions dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/functions
+        state: directory
+        mode: "0755"
+
+    - name: Show how to reach the foundry user on root login
+      ansible.builtin.template:
+        src: foundry-root-greeting.fish.j2
+        dest: /root/.config/fish/functions/fish_greeting.fish
+        mode: "0644"

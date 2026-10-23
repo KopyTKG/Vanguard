@@ -102,6 +102,18 @@
             create: true
             mode: "0644"
 
+        - name: Ensure fish functions dir for steam
+          ansible.builtin.file:
+            path: "{{ steam_home }}/.config/fish/functions"
+            state: directory
+            mode: "0755"
+
+        - name: Show how to use the server scripts on login
+          ansible.builtin.template:
+            src: steam-greeting.fish.j2
+            dest: "{{ steam_home }}/.config/fish/functions/fish_greeting.fish"
+            mode: "0644"
+
         - name: Install the baseline vim config for steam
           ansible.builtin.copy:
             src: files/vimrc
@@ -165,6 +177,11 @@
 
     # Root again: the crontab belongs to the steam user but only root can write
     # someone else's.
+    - name: Quiet the stock login banner
+      ansible.builtin.include_tasks: tasks/quiet-login.yml
+      vars:
+        quiet_login_homes: "{{ ['/root', steam_home] }}"
+
     - name: Ensure cron is running
       ansible.builtin.service:
         name: cron

@@ -1,0 +1,16 @@
+# Managed by Ansible (playbooks/foundry.yml) — local edits get overwritten.
+function fish_greeting
+    set_color --bold cyan
+    echo "foundry — FoundryVTT v{{ foundry_version }}"
+    set_color normal
+    echo
+    echo "  ./foundry.sh start|stop|restart|status"
+    echo "  ./foundry.sh attach          (detach: Ctrl-b d)"
+    echo "  ./foundry.sh logs [n]        (/var/log/foundry/foundry.log)"
+    echo
+    echo "  install:  ~/foundryvtt   (unpacked Foundry build)"
+    echo "  data:     ~/foundrydata"
+    echo "  node:     "(mise which node 2>/dev/null; or echo "not installed")
+    echo "  starts at boot from this user's crontab (crontab -l)"
+    echo
+end

@@ -1,0 +1,118 @@
+#!/usr/bin/env sh
+# usage: ./foundry.sh {start|stop|restart|attach|status|cmd <text>|logs [n]}
+# Managed by Ansible — the CONFIG block is the only part meant for tweaking;
+# everything below it is generic. Local edits get overwritten by the next run.
+
+# ---- CONFIG ----------------------------------------------------------------
+SESSION=foundry
+ROOT={{ foundry_home }}                                # base dir for everything below
+DATA=$ROOT/foundrydata                      # FoundryVTT user data (--dataPath)
+FOUNDRY_ROOT=$ROOT/foundryvtt               # unpacked FoundryVTT install
+TARGET=$FOUNDRY_ROOT/resources/app/main.js  # entrypoint passed to node
+STOP_TIMEOUT=30                             # seconds to wait for a clean shutdown
+RESTART_DELAY=5                             # seconds between crash respawns
+AUTORESTART=1                               # 0 = never respawn on nonzero exit
+LOGDIR=/var/log/foundry
+LOGFILE=$LOGDIR/foundry.log                 # all runs since the last `start`, crashes included
+LOGFILE_OLD=$LOGFILE.old                    # previous `start`'s log, kept for postmortem
+# -----------------------------------------------------------------------------
+
+DIR=$FOUNDRY_ROOT
+
+# Resolved at run time so the *global* mise node is used (no config in $DIR,
+# so mise falls back to the global version). Version bumps need no edit here.
+export PATH="$ROOT/.local/bin:$ROOT/.local/share/mise/shims:$PATH"
+RUNNER=$(eval mise which node)
+
+# Helpers usable inside the hooks:
+#   send <text>    type a line into the console
+#   signal <SIG>   send a signal to the node process (e.g. signal INT)
+#   is_up          true while the session exists
+
+on_start() {             # runs in $DIR, in the foreground; supervised by the loop
+    echo "Starting foundry: $RUNNER $TARGET --dataPath=$DATA"
+    "$RUNNER" "$TARGET" --dataPath="$DATA"
+}
+
+on_stop() {              # ask foundry to shut down cleanly
+    signal TERM
+}
+
+on_restart() {           # default: full cycle
+    stop
+    sleep 2
+    start
+}
+
+set -u
+SELF=$(readlink -f "$0")
+STOPFILE=${TMPDIR:-/tmp}/.$SESSION.stopping
+STATUSFILE=${TMPDIR:-/tmp}/.$SESSION.exitcode
+
+is_up()  { tmux has-session -t "$SESSION" 2>/dev/null; }
+send()   { tmux send-keys -t "$SESSION" "$*" Enter; }
+signal() {
+    pane=$(tmux list-panes -t "$SESSION" -F '#{pane_pid}' | head -n1)
+    [ -n "$pane" ] && pkill "-${1:-TERM}" -P "$pane" 2>/dev/null
+}
+log()    { echo "$*" | tee -a "$LOGFILE"; }   # supervisor message: pane + logfile
+
+_loop() {
+    cd "$DIR" || exit 1
+    while :; do
+        # $? after a pipeline is tee's, not on_start's — stash the real one in
+        # a file instead (no PIPESTATUS, this runs under plain sh).
+        { on_start; echo $? > "$STATUSFILE"; } 2>&1 | tee -a "$LOGFILE"
+        code=$(cat "$STATUSFILE")
+        [ -f "$STOPFILE" ]   && { log ">> stop requested, staying down."; break; }
+        [ "$code" -eq 0 ]    && { log ">> clean exit, staying down."; break; }
+        [ "$AUTORESTART" = 1 ] || { log ">> exit $code, autorestart off."; break; }
+        log ">> crashed (exit $code), restarting in ${RESTART_DELAY}s..."
+        sleep "$RESTART_DELAY"
+    done
+}
+
+start() {
+    if is_up; then
+        echo "Already running — attaching."
+        exec tmux attach -t "$SESSION"
+    fi
+    [ -d "$DIR" ] || { echo "DIR does not exist: $DIR" >&2; exit 1; }
+    [ -f "$TARGET" ] || { echo "TARGET does not exist: $TARGET" >&2; exit 1; }
+    rm -f "$STOPFILE"
+    mkdir -p "$LOGDIR"
+    [ -f "$LOGFILE" ] && mv -f "$LOGFILE" "$LOGFILE_OLD"
+    tmux new-session -d -s "$SESSION" "$SELF" _loop
+    echo "Started '$SESSION'.  attach: $0 attach   stop: $0 stop   logs: $0 logs"
+}
+
+stop() {
+    is_up || { echo "Not running."; return 0; }
+    : > "$STOPFILE"
+    echo "Shutting down, waiting up to ${STOP_TIMEOUT}s..."
+    on_stop
+    i=0
+    while is_up; do
+        i=$((i + 1))
+        [ "$i" -ge "$STOP_TIMEOUT" ] && {
+            echo "Timeout — killing session."
+            tmux kill-session -t "$SESSION" 2>/dev/null
+            break
+        }
+        sleep 1
+    done
+    rm -f "$STOPFILE"
+    echo "Stopped."
+}
+
+case "${1:-}" in
+    _loop)   _loop ;;
+    start)   start ;;
+    stop)    stop ;;
+    restart) on_restart ;;
+    attach)  is_up && exec tmux attach -t "$SESSION" || echo "Not running." ;;
+    status)  is_up && echo "running" || echo "stopped" ;;
+    cmd)     shift; is_up && send "$*" || echo "Not running." ;;
+    logs)    [ -f "$LOGFILE" ] && tail -n "${2:-200}" "$LOGFILE" || echo "No log yet: $LOGFILE" ;;
+    *) echo "usage: $0 {start|stop|restart|attach|status|cmd <text>|logs [n]}"; exit 1 ;;
+esac

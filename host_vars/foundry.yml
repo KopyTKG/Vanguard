@@ -1,0 +1,3 @@
+---
+# foundry — FoundryVTT v13+. Consumed by playbooks/foundry.yml.
+foundry_version: 13

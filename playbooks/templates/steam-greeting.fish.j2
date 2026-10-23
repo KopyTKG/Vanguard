@@ -1,0 +1,19 @@
+# Managed by Ansible (playbooks/steamcmd.yml) — local edits get overwritten.
+function fish_greeting
+    set_color --bold cyan
+    echo "steam — dedicated game servers"
+    set_color normal
+    echo
+{% for slug in steam_servers.keys() | sort %}
+    echo "  {{ slug }}"
+    echo "    ./{{ slug }}-server.sh start|stop|restart|status"
+    echo "    ./{{ slug }}-server.sh attach        (detach: Ctrl-b d)"
+    echo "    ./{{ slug }}-server.sh cmd <text>    (type into the console)"
+    echo "    ./{{ slug }}-server.sh logs [n]      (/var/log/steamcmd/{{ slug }}.log)"
+    echo "    README: ~/{{ slug }}/README.txt"
+    echo
+{% endfor %}
+    echo "  update/reinstall:  ./steamcmd-install.sh <slug>"
+    echo "  servers start at boot from this user's crontab (crontab -l)"
+    echo
+end
