@@ -14,6 +14,8 @@ All in `playbooks/templates/`. Deployed files are Ansible-managed — edit the t
 | `steamcmd-readme.txt.j2` | `steamcmd.yml` | `~steam/<slug>/README.txt` |
 | `steam-greeting.fish.j2` | `steamcmd.yml` | `~steam/.config/fish/functions/fish_greeting.fish` |
 | `launcher-completions.fish.j2` | `foundry.yml`, `minecraft.yml`, `steamcmd.yml` | `~<user>/.config/fish/conf.d/launcher-completions.fish` (and root's, for the switch scripts) |
+| `steam-root-greeting.fish.j2` | `steamcmd.yml` | `/root/.config/fish/functions/fish_greeting.fish` |
+| `steam-root-completions.fish.j2` | `steamcmd.yml` | `/root/.config/fish/conf.d/steam-completions.fish` |
 | `foundry.sh.j2` | `foundry.yml` (v13+) | `~foundry/foundry.sh` |
 | `foundry-legacy.sh.j2` | `foundry.yml` (≤v12) | `~foundry/foundry.sh` |
 | `foundry-greeting.fish.j2` | `foundry.yml` | `~foundry/.config/fish/functions/fish_greeting.fish` |

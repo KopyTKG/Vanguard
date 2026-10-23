@@ -25,11 +25,12 @@ Operators SSH in as **root** and switch with `su - <user>`. Root can switch to a
 
 ## Switch shortcuts
 
-On Foundry and Minecraft hosts Ansible installs `/usr/local/bin/foundry` / `/usr/local/bin/minecraft` (root only):
+On Foundry, Minecraft and Steam hosts Ansible installs `/usr/local/bin/foundry`, `/usr/local/bin/minecraft` and `/usr/local/bin/steam` (root only):
 
 ```bash
 foundry                  # su - foundry
 foundry attach           # su - foundry -c "~/foundry.sh attach"
+steam avorion attach     # Steam has several servers: steam <server> <command>
 ```
 
 ## What each user owns

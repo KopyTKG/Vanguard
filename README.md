@@ -96,6 +96,9 @@ session and respawns it if it crashes, plus a `@reboot` line in the steam user's
 crontab. A game in `steam_games` but not `steam_servers` is installed and left
 alone.
 
+As root, the `steam` switch script is the shortcut: `steam` becomes the steam
+user, `steam palworld status` runs a server's launcher directly (tab completes).
+
 ```bash
 sudo -iu steam ./palworld-server.sh start      # stop | restart | status
 sudo -iu steam ./palworld-server.sh attach     # drop into the console

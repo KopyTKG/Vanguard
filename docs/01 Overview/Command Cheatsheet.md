@@ -40,11 +40,14 @@ tags: [reference]
 
 ## On a Steam host
 
-```bash
-sudo -iu steam <slug>-server.sh start|stop|restart|status|attach|logs [n]
-sudo -iu steam <slug>-server.sh cmd 'say hi'
-sudo -iu steam ./steamcmd-install.sh <slug>      # install / update a game
-```
+| As | Command | Does |
+|---|---|---|
+| root | `steam` | switch to the `steam` user |
+| root | `steam <server> start \| stop \| restart \| attach \| status \| cmd <text> \| logs [n]` | run that server's launcher from root |
+| steam | `<slug>-server.sh start\|stop\|restart\|status\|attach\|logs [n]` | launcher |
+| steam | `steamcmd-install.sh <slug>` | install / update a game |
+
+Tab completes servers and subcommands.
 
 ## Tab completion
 

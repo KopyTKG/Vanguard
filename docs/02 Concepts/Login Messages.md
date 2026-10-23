@@ -14,6 +14,7 @@ End users shouldn't see the Debian kernel banner and warranty text — they need
 | **root** (Foundry / Minecraft hosts) | how to switch to the app user, how to run the launcher from root |
 | **foundry** | launcher commands, install/data paths, node path, boot behaviour |
 | **minecraft** | launcher commands incl. `cmd`, server dir, java path, memory/port |
+| **root** (Steam hosts) | how to switch to `steam` and run a server's launcher from root, with the server list |
 | **steam** | per server: start/stop/attach/cmd/logs, log path, README location |
 
 ## How it works

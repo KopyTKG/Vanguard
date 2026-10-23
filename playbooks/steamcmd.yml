@@ -222,6 +222,49 @@
       loop_control:
         label: "{{ item.key }}"
 
+    # Root shortcut: `steam` drops into the steam user's shell,
+    # `steam <server> <command>` runs that server's launcher directly.
+    - name: Install the steam switch script
+      ansible.builtin.copy:
+        dest: /usr/local/bin/steam
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/usr/bin/env sh
+          # Managed by Ansible.
+          [ $# -eq 0 ] && exec su - {{ steam_user }}
+          srv=$1; shift
+          [ -x "{{ steam_home }}/$srv-server.sh" ] || {
+              echo "usage: steam [<server> <command>]   servers: {{ steam_servers.keys() | sort | join(' ') }}" >&2
+              exit 1
+          }
+          exec su - {{ steam_user }} -c "{{ steam_home }}/$srv-server.sh $*"
+
+    - name: Ensure fish conf.d dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/conf.d
+        state: directory
+        mode: "0755"
+
+    - name: Tab-complete the steam switch script
+      ansible.builtin.template:
+        src: steam-root-completions.fish.j2
+        dest: /root/.config/fish/conf.d/steam-completions.fish
+        mode: "0644"
+
+    - name: Ensure fish functions dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/functions
+        state: directory
+        mode: "0755"
+
+    - name: Show how to reach the steam user on root login
+      ansible.builtin.template:
+        src: steam-root-greeting.fish.j2
+        dest: /root/.config/fish/functions/fish_greeting.fish
+        mode: "0644"
+
     - name: Note the games pulled as Windows builds
       ansible.builtin.debug:
         msg: >-

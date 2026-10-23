@@ -1,0 +1,18 @@
+# Managed by Ansible (playbooks/steamcmd.yml) — local edits get overwritten.
+function fish_greeting
+    set_color --bold cyan
+    echo "{{ inventory_hostname }} — Steam game server host"
+    set_color normal
+    echo
+    echo "  steam                           switch to the {{ steam_user }} user"
+    echo "  steam <server> <command>        run a server's launcher as {{ steam_user }} from here"
+    echo "                                  commands: start stop restart attach status cmd logs"
+    echo
+    echo "  servers:"
+{% for slug in steam_servers.keys() | sort %}
+    echo "    {{ slug }}    e.g.  steam {{ slug }} status"
+{% endfor %}
+    echo
+    echo "  game files live under {{ steam_home }} — work there as {{ steam_user }}, not root"
+    echo
+end

@@ -50,6 +50,18 @@ Re-runs skip games whose app manifest exists. To pull a patch:
 sudo -iu steam ./steamcmd-install.sh <slug>
 ```
 
+## Switching from root
+
+`/usr/local/bin/steam` (installed by the playbook, root only):
+
+```bash
+steam                       # become the steam user
+steam avorion status        # steam <server> <command>
+steam avorion attach        # start | stop | restart | attach | status | cmd | logs
+```
+
+An unknown server name prints the list of configured servers. Tab completes servers and commands.
+
 ## Login greeting
 
 The steam user's login lists every server with its commands — [[Login Messages]].

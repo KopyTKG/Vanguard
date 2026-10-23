@@ -1,0 +1,12 @@
+# Managed by Ansible — local edits get overwritten.
+# Completion for root's `steam` switch script: steam <server> <command>.
+complete -c steam -f
+complete -c steam -n '__fish_is_nth_token 1' -a '{{ steam_servers.keys() | sort | join(' ') }}' -d 'game server'
+complete -c steam -n '__fish_is_nth_token 2' -a start -d 'start in a tmux session (attaches if already running)'
+complete -c steam -n '__fish_is_nth_token 2' -a stop -d 'shut down cleanly'
+complete -c steam -n '__fish_is_nth_token 2' -a restart -d 'stop, then start'
+complete -c steam -n '__fish_is_nth_token 2' -a attach -d 'open the console (detach: Ctrl-b d)'
+complete -c steam -n '__fish_is_nth_token 2' -a status -d 'running or stopped'
+complete -c steam -n '__fish_is_nth_token 2' -a cmd -d 'type a line into the console'
+complete -c steam -n '__fish_is_nth_token 2' -a logs -d 'show the log (default last 200 lines)'
+complete -c steam -n '__fish_is_nth_token 3; and test "$(commandline -opc)[3]" = logs' -a '50 200 1000' -d 'lines'
