@@ -47,8 +47,8 @@ on_start() {             # runs in $DIR, in the foreground; supervised by the lo
     "$RUNNER" -Xms$MEMORY -Xmx$MEMORY -jar "$jar" nogui
 }
 
-on_stop() {              # `stop` saves the world before exiting
-    send 'stop'
+on_stop() {              # mc_stop_cmd, default `stop`: saves the world, then exits
+    send {{ mc_stop_cmd | quote }}
 }
 
 on_restart() {           # default: full cycle

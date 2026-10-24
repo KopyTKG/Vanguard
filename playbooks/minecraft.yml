@@ -305,13 +305,93 @@
             dest: "{{ mc_home }}/server/eula.txt"
             mode: "0644"
 
-        - name: Set the server port
+        - name: Set server.properties
           ansible.builtin.lineinfile:
             path: "{{ mc_home }}/server/server.properties"
-            regexp: '^server-port='
-            line: "server-port={{ mc_port }}"
+            regexp: "^{{ item.key | regex_escape }}="
+            line: "{{ item.key }}={{ (item.value | string | lower) if item.value is boolean else item.value }}"
             create: true
             mode: "0644"
+          loop: "{{ mc_server_properties | dict2items }}"
+          loop_control:
+            label: "{{ item.key }}"
+          vars:
+            mc_server_properties: >-
+              {{ {'server-port': mc_port}
+                 | combine({'max-players': mc_max_players} if mc_max_players is not none else {})
+                 | combine({'motd': mc_motd} if mc_motd is not none else {})
+                 | combine({'level-seed': mc_seed} if mc_seed is not none else {})
+                 | combine(mc_properties) }}
+
+        - name: Look up whitelist UUIDs
+          ansible.builtin.uri:
+            url: "https://api.mojang.com/users/profiles/minecraft/{{ item }}"
+            return_content: true
+            status_code: [200, 204, 404]
+          register: mc_wl_lookup
+          loop: "{{ mc_whitelist | default([], true) }}"
+          when: mc_whitelist is not none
+
+        - name: Fail on unknown player names
+          ansible.builtin.assert:
+            that: item.status == 200
+            fail_msg: "No Mojang account named {{ item.item }}"
+          loop: "{{ mc_wl_lookup.results | default([]) }}"
+          loop_control:
+            label: "{{ item.item }}"
+          when: mc_whitelist is not none
+
+        - name: Write whitelist.json
+          ansible.builtin.copy:
+            content: |
+              {% set ns = namespace(out=[]) %}
+              {% for r in mc_wl_lookup.results %}
+              {% set i = r.json.id %}
+              {% set ns.out = ns.out + [{'uuid': i[0:8] ~ '-' ~ i[8:12] ~ '-' ~ i[12:16] ~ '-' ~ i[16:20] ~ '-' ~ i[20:], 'name': r.json.name}] %}
+              {% endfor %}
+              {{ ns.out | to_nice_json }}
+            dest: "{{ mc_home }}/server/whitelist.json"
+            mode: "0644"
+          when: mc_whitelist is not none
+
+        - name: Look up operator UUIDs
+          ansible.builtin.uri:
+            url: "https://api.mojang.com/users/profiles/minecraft/{{ item }}"
+            return_content: true
+            status_code: [200, 204, 404]
+          register: mc_ops_lookup
+          loop: "{{ mc_ops | default([], true) }}"
+          when: mc_ops is not none
+
+        - name: Fail on unknown operator names
+          ansible.builtin.assert:
+            that: item.status == 200
+            fail_msg: "No Mojang account named {{ item.item }}"
+          loop: "{{ mc_ops_lookup.results | default([]) }}"
+          loop_control:
+            label: "{{ item.item }}"
+          when: mc_ops is not none
+
+        - name: Write ops.json
+          ansible.builtin.copy:
+            content: |
+              {% set ns = namespace(out=[]) %}
+              {% for r in mc_ops_lookup.results %}
+              {% set i = r.json.id %}
+              {% set ns.out = ns.out + [{'uuid': i[0:8] ~ '-' ~ i[8:12] ~ '-' ~ i[12:16] ~ '-' ~ i[16:20] ~ '-' ~ i[20:], 'name': r.json.name, 'level': mc_op_level | int, 'bypassesPlayerLimit': false}] %}
+              {% endfor %}
+              {{ ns.out | to_nice_json }}
+            dest: "{{ mc_home }}/server/ops.json"
+            mode: "0644"
+          when: mc_ops is not none
+
+        - name: Enable the whitelist
+          ansible.builtin.lineinfile:
+            path: "{{ mc_home }}/server/server.properties"
+            regexp: "^{{ item }}="
+            line: "{{ item }}=true"
+          loop: [white-list, enforce-whitelist]
+          when: mc_whitelist is not none
 
     - name: Template the launcher script
       ansible.builtin.template:

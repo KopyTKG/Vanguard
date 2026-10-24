@@ -179,6 +179,14 @@ mc_eula: true            # required — you accept https://aka.ms/MinecraftEULA
 mc_java: temurin-21      # any mise java spec; 1.20.5+ needs 21, 1.18-1.20.4 needs 17
 mc_memory: 6G            # -Xms/-Xmx
 mc_port: 25565           # written into server.properties
+mc_max_players: 12       # optional: max-players
+mc_motd: "My server"     # optional: server name in the multiplayer list
+mc_seed: 8675309         # optional: level-seed, only used when the world is first generated
+mc_stop_cmd: stop        # console command typed on `stop`/`restart`
+mc_whitelist: [Notch]    # optional: enables the whitelist, rewrites whitelist.json
+mc_ops: [Notch]          # optional: rewrites ops.json (mc_op_level, default 4)
+mc_properties:           # optional: any other server.properties key
+  difficulty: hard
 mc_modpack:
   source: modrinth       # or curseforge, or vanilla (then: version: "1.21.4" | latest)
   pack: adrenaserver     # modrinth: slug, project id, or .mrpack URL/path

@@ -110,7 +110,8 @@ mc_remove_mods:
 
 - Forge/NeoForge (`run.sh` exists) → `JAVA_TOOL_OPTIONS="-Xms$MEM -Xmx$MEM" sh run.sh nogui`
 - otherwise `java -Xms -Xmx -jar` the first of `fabric-server-launch.jar`, `quilt-server-launch.jar`, `server.jar` (override: `mc_launch`)
-- `stop` types `stop` so the world saves; waits `mc_stop_timeout` (120s)
+- `stop` types `mc_stop_cmd` (default `stop`) so the world saves; waits `mc_stop_timeout` (120s)
+- server name, player cap, seed and other `server.properties` keys: `mc_motd`, `mc_max_players`, `mc_seed`, `mc_properties` — see [[Minecraft Variables]]
 
 ```bash
 minecraft status | start | stop | restart | attach | logs 200      # root

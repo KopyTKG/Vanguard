@@ -24,6 +24,35 @@ mc_java: temurin-21
 mc_memory: 4G
 mc_port: 25565
 mc_stop_timeout: 120 # seconds `stop` waits for the world to save
+# Console command the launcher types on `stop`/`restart`. `stop` saves the world
+# and exits; some mod loaders want something else (e.g. "end" on Bungee-style
+# proxies, or "shutdown" on a few Forge-era servers).
+mc_stop_cmd: stop
+
+# server.properties. The playbook writes only the keys you set here, so the rest
+# of the file stays as the server (or you, by hand) left it. Unset = untouched.
+mc_max_players: ~ # max-players, e.g. 20
+mc_motd: ~ # motd, the server name shown in the multiplayer list
+mc_seed: ~ # level-seed — only used when the world is first generated
+# Player names allowed to join. Setting a list turns on white-list and
+# enforce-whitelist and rewrites whitelist.json from it on every run (names are
+# resolved to UUIDs through Mojang, so the server needs online-mode=true).
+# Unset = whitelist untouched; an empty list [] kicks everyone but ops.
+#   mc_whitelist: [Notch, jeb_]
+mc_whitelist: ~
+# Operators (admins). Same rules as the whitelist: names are resolved through
+# Mojang and ops.json is rewritten from the list on every run; unset = untouched.
+# Ops still have to be on the whitelist to join. mc_op_level is 1-4 (4 = full).
+#   mc_ops: [Notch]
+mc_ops: ~
+mc_op_level: 4
+# Any other server.properties key, written as-is. Booleans become true/false.
+#   mc_properties:
+#     difficulty: hard
+#     view-distance: 12
+#     white-list: true
+#     online-mode: true
+mc_properties: {}
 
 # Mojang EULA (https://aka.ms/MinecraftEULA) — must be set true per host, the
 # playbook refuses to continue otherwise.

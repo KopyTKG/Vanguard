@@ -3,6 +3,16 @@ mc_eula: true # you accept https://aka.ms/MinecraftEULA
 mc_java: temurin-21
 mc_memory: 8G
 mc_port: 25565
+mc_motd: "Create+ survival"
+mc_max_players: 4
+mc_seed: 8675309 # only used when the world is first generated
+mc_stop_cmd: "/stop"
+# Mojang account names; resolved to UUIDs by the playbook. Placeholders — replace.
+mc_whitelist: [KopyTKG]
+mc_ops: [KopyTKG]
+mc_properties:
+  difficulty: hard
+  view-distance: 12
 
 mc_modpack:
   # Modrinth pack. Pinned: without `version` the newest *release* is used, which

@@ -24,7 +24,6 @@ foundryvtt:
 
 minecraft:
   hosts:
-    #allthemons: { ansible_port: 2204 } # host_vars/allthemons.yml — worked example, uncomment to deploy
     createmc: { ansible_port: 2204 } # host_vars/createmc.yml
 
 web:
