@@ -8,8 +8,8 @@ mc_max_players: 4
 mc_seed: 8675309 # only used when the world is first generated
 mc_stop_cmd: "/stop"
 # Mojang account names; resolved to UUIDs by the playbook. Placeholders — replace.
-mc_whitelist: [KopyTKG]
-mc_ops: [KopyTKG]
+mc_whitelist: [Kopy_TKG]
+mc_ops: [Kopy_TKG]
 mc_properties:
   difficulty: hard
   view-distance: 12
