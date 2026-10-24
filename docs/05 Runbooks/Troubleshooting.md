@@ -46,8 +46,18 @@ If you have no live session, use the Proxmox console: `pct enter <ctid>` and run
 | `stop` hangs then `Timeout — killing session` | server too slow to stop; raise `STOP_TIMEOUT` / `mc_stop_timeout` |
 | Minecraft OOM / killed | raise `mc_memory`, and check the LXC memory limit in Proxmox |
 
+## Minecraft install
+
+| Symptom | Cause / fix |
+|---|---|
+| `forge provider not implemented` from `mrpack-install` | shouldn't appear any more: the playbook installs Forge/NeoForge itself. If the install fails, read its output: `Pack needs a server loader ...` means the pack has no forge/neoforge dependency; a Java error means `mc_java` doesn't match the pack's Minecraft version |
+| Installer download fails | check the loader version in the pack exists on maven.minecraftforge.net / maven.neoforged.net |
+| Crash on start: `invalid dist DEDICATED_SERVER`, `has class loading errors`, or a mixin failing on `net.minecraft.client.Minecraft` | client-only mod in the pack — add it to `mc_remove_mods` ([[Minecraft]]) and re-run |
+| Wrong Minecraft version installed | `mc_modpack.version` not set → newest *release* line. Pin it ([[Minecraft]]) |
+| Left-over `*.mrpack` in `~minecraft/server` | harmless; the next run reuses or removes it |
+
 ## Unverified (Minecraft)
 
-First real run may expose: `mrpack-install` argument order, server jar names, CurseForge zip layout. Fix in `playbooks/minecraft.yml` and note it in [[Minecraft]].
+First real run may still expose: the CurseForge zip layout and on-host paths. Fix in `playbooks/minecraft.yml` and note it in [[Minecraft]].
 
 Related: [[Launcher Scripts]], [[Daily Operations]].

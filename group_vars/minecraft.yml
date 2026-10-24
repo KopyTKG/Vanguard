@@ -51,6 +51,15 @@ mc_eula: false
 # replaced, worlds and server.properties are kept).
 mc_modpack: {}
 
+# Mod files to delete from ~/server/mods after the pack installs (shell globs,
+# matched on the file name). Client-only mods in a pack crash a dedicated server
+# with errors like "Attempted to load class ... for invalid dist
+# DEDICATED_SERVER" or a mixin failing on net.minecraft.client.Minecraft.
+#   mc_remove_mods:
+#     - "oculus-*.jar"
+#     - "figura-*.jar"
+mc_remove_mods: []
+
 # Pretty name for the login greetings; derived from mc_modpack.
 mc_pack_name: >-
   {{ ('vanilla ' ~ mc_modpack.version) if mc_modpack.source | default('') == 'vanilla'

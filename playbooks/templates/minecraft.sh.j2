@@ -38,7 +38,7 @@ on_start() {             # runs in $DIR, in the foreground; supervised by the lo
     fi
     jar=$LAUNCH
     if [ -z "$jar" ]; then
-        for f in fabric-server-launch.jar quilt-server-launch.jar server.jar; do
+        for f in fabric-server-launch.jar quilt-server-launch.jar server.jar forge-*.jar; do
             [ -f "$f" ] && { jar=$f; break; }
         done
     fi

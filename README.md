@@ -193,7 +193,9 @@ mc_modpack:
   `latest` = newest release at install time) and checks its sha1.
 - **Modrinth** packs install with
   [mrpack-install](https://github.com/nothub/mrpack-install) (fetched to
-  `/usr/local/bin`), which also sets up the Fabric/Forge/NeoForge/Quilt server.
+  `/usr/local/bin`), which sets up Fabric/Quilt servers itself. For Forge/NeoForge
+  packs (which it can't) the playbook runs the loader's own installer, then lets
+  mrpack-install add the mods and config.
 - **CurseForge** needs the pack's **Server Files** zip, not the client modpack:
   client manifests need an API key and don't contain the server. The zip is
   unpacked into `~minecraft/server`.

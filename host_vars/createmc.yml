@@ -1,0 +1,18 @@
+---
+mc_eula: true # you accept https://aka.ms/MinecraftEULA
+mc_java: temurin-21
+mc_memory: 8G
+mc_port: 25565
+
+mc_modpack:
+  # Modrinth pack. Pinned: without `version` the newest *release* is used, which
+  # is the 1.19.2 Forge line (5.x) — the 1.21.1 NeoForge line is 6.0.0-alpha-*.
+  source: modrinth
+  pack: create_plus
+  version: 6.0.0-alpha-f # Minecraft 1.21.1, NeoForge 21.1.233
+
+# Client-only mods shipped in the pack. A dedicated server can't load them
+# ("Attempted to load class ... for invalid dist DEDICATED_SERVER"). Found by
+# booting the pack's NeoForge server and removing whatever failed to load.
+mc_remove_mods:
+  - "statuseffectbars-*.jar"

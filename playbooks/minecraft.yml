@@ -165,15 +165,97 @@
               register: mc_vanilla_jar
               changed_when: true
 
-        # Writes server.jar/run.sh, mods/ and config/ into the server dir.
+        # A pack that changes (new pack, or a new version of it) can span Minecraft
+        # versions, and mrpack-install only adds files — it never removes the old
+        # pack's mods or loader. So clear those first. Worlds, configs and
+        # server.properties are left alone.
+        - name: Clear the previous pack's mods and loader
+          when: mc_pack_have != '' and mc_pack_id != mc_pack_have
+          ansible.builtin.file:
+            path: "{{ mc_home }}/server/{{ item }}"
+            state: absent
+          loop: [mods, libraries, run.sh, run.bat, user_jvm_args.txt, server.jar, fabric-server-launch.jar, quilt-server-launch.jar, .fabric]
+
+        - name: Remove old Forge jars
+          when: mc_pack_have != '' and mc_pack_id != mc_pack_have
+          ansible.builtin.shell: rm -f forge-*.jar
+          args:
+            chdir: "{{ mc_home }}/server"
+          changed_when: false
+
+        # Everything Modrinth: resolve the pack version (API), read the loader out
+        # of the .mrpack and install the right server. mrpack-install builds
+        # Fabric/Quilt/vanilla servers itself, but not Forge (it errors) or NeoForge
+        # (it silently installs a *vanilla* jar), so for those the loader's own
+        # installer runs first and mrpack-install is pointed at its output with
+        # --server-file so it only adds mods and config.
         - name: Install the Modrinth pack
-          ansible.builtin.command: >-
-            mrpack-install {{ mc_modpack.pack }}
-            {{ mc_modpack.version | default('') }}
-            --server-dir {{ mc_home }}/server
           when: mc_modpack.source == 'modrinth' and mc_pack_id != mc_pack_have
           register: mc_mrpack
           changed_when: true
+          environment:
+            SPEC: "{{ mc_modpack.pack }}"
+            VER: "{{ mc_modpack.version | default('') }}"
+          ansible.builtin.shell:
+            cmd: |
+              set -eu
+              cd "{{ mc_home }}/server"
+              spec="$SPEC"; ver="${VER:-}"
+              JAVA="$(mise which java)"
+              MRPACK=mrpack-install
+              case "$spec" in
+                  http://*|https://*) url="$spec" ;;
+                  */*|*.mrpack)       cp "$spec" pack.mrpack; url="" ;;
+                  *)
+                      # Modrinth slug or project id: resolve the version through the API.
+                      url=$(python3 - "$spec" "$ver" <<'PY'
+              import json, sys, urllib.request
+              spec, ver = sys.argv[1], sys.argv[2]
+              req = urllib.request.Request(
+                  "https://api.modrinth.com/v2/project/%s/version" % spec,
+                  headers={"User-Agent": "vanguard-ansible/1.0"})
+              versions = json.load(urllib.request.urlopen(req))
+              if ver:
+                  pick = [v for v in versions if ver in (v["version_number"], v["id"])]
+              else:
+                  # mrpack-install's "latest" skips pre-releases; do the same.
+                  pick = [v for v in versions if v["version_type"] == "release"] or versions
+              if not pick:
+                  sys.exit("No version %r of Modrinth pack %r" % (ver, spec))
+              files = pick[0]["files"]
+              print(next((f for f in files if f.get("primary")), files[0])["url"])
+              PY
+                      ) ;;
+              esac
+              [ -z "$url" ] || curl -fsSL -o pack.mrpack "$url"
+              deps=$(unzip -p pack.mrpack modrinth.index.json)
+              dep() { printf '%s' "$deps" | python3 -c "import json,sys; print(json.load(sys.stdin)['dependencies'].get('$1', ''))"; }
+              mc=$(dep minecraft); nf=$(dep neoforge); fg=$(dep forge)
+              if [ -n "$nf" ]; then
+                  inst="https://maven.neoforged.net/releases/net/neoforged/neoforge/$nf/neoforge-$nf-installer.jar"
+              elif [ -n "$fg" ]; then
+                  inst="https://maven.minecraftforge.net/net/minecraftforge/forge/$mc-$fg/forge-$mc-$fg-installer.jar"
+              else
+                  inst=""
+              fi
+              if [ -n "$inst" ]; then
+                  # mrpack-install can't build these servers (Forge errors out, NeoForge
+                  # silently falls back to a vanilla jar), so run the loader's own installer
+                  # first and point mrpack-install at the result.
+                  echo "Installing the server loader from $inst"
+                  curl -fsSL -o installer.jar "$inst"
+                  "$JAVA" -jar installer.jar --installServer
+                  rm -f installer.jar installer.jar.log
+                  # 1.17+ writes run.sh; older Forge writes forge-<mc>-<ver>.jar.
+                  if [ -f run.sh ]; then sf=run.sh; else sf=$(ls forge-*.jar | head -1); fi
+                  "$MRPACK" ./pack.mrpack --server-dir . --server-file "$sf"
+              else
+                  "$MRPACK" ./pack.mrpack --server-dir .
+              fi
+              rm -f pack.mrpack
+
+          args:
+            executable: /bin/bash
 
         - name: Install the CurseForge server pack
           when: mc_modpack.source == 'curseforge' and mc_pack_id != mc_pack_have
@@ -198,6 +280,24 @@
             dest: "{{ mc_home }}/server/.modpack"
             mode: "0644"
           when: mc_pack_id != mc_pack_have
+
+        # Packs often ship client-only mods that crash a dedicated server. They're
+        # listed per host in mc_remove_mods and removed on every run, so a
+        # reinstall of the pack doesn't bring them back.
+        - name: Find client-only mods to remove
+          ansible.builtin.find:
+            paths: "{{ mc_home }}/server/mods"
+            patterns: "{{ mc_remove_mods }}"
+          register: mc_unwanted
+          when: mc_remove_mods | length > 0
+
+        - name: Remove them
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            state: absent
+          loop: "{{ mc_unwanted.files | default([]) }}"
+          loop_control:
+            label: "{{ item.path | basename }}"
 
         - name: Accept the Mojang EULA
           ansible.builtin.copy:

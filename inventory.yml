@@ -25,8 +25,7 @@ foundryvtt:
 minecraft:
   hosts:
     #allthemons: { ansible_port: 2204 } # host_vars/allthemons.yml — worked example, uncomment to deploy
-    # mcdummy: { ansible_port: 2213 } # throwaway test host, same shape
-    {}
+    createmc: { ansible_port: 2204 } # host_vars/createmc.yml
 
 web:
   hosts:

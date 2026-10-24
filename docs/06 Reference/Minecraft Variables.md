@@ -16,6 +16,7 @@ Defaults live in `group_vars/minecraft.yml`; override per host in `host_vars/<cl
 | `mc_memory` | `4G` | | `-Xms`/`-Xmx`, e.g. `6G`, `8192M` |
 | `mc_port` | `25565` | | written to `server.properties` |
 | `mc_stop_timeout` | `120` | | seconds `stop` waits for the world to save |
+| `mc_remove_mods` | `[]` | | mod file globs deleted from `server/mods` on every run (client-only mods) |
 | `mc_launch` | *(auto)* | | force a specific server jar |
 | `mc_eula` | `false` | **yes → true** | accept https://aka.ms/MinecraftEULA |
 | `mc_modpack` | `{}` | **yes** | see below |
