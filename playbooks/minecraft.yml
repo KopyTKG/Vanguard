@@ -124,7 +124,7 @@
         - name: Work out which pack is wanted
           ansible.builtin.set_fact:
             mc_pack_id: >-
-              {{ mc_modpack.source }}:{{ mc_modpack.pack | default(mc_modpack.url | default('')) }}:{{ mc_modpack.version | default('latest') }}
+              {{ mc_modpack.source }}:{{ mc_modpack.pack | default(mc_modpack.url | default('')) }}:{{ mc_modpack.version | default('latest') }}{{ ('+' ~ mc_force_mods | join('+')) if mc_force_mods else '' }}
             mc_pack_have: "{{ (mc_installed.content | default('') | b64decode) | trim }}"
 
         # Vanilla: Mojang publishes every server jar through a version manifest.
@@ -176,9 +176,9 @@
             state: absent
           loop: [mods, libraries, run.sh, run.bat, user_jvm_args.txt, server.jar, fabric-server-launch.jar, quilt-server-launch.jar, .fabric]
 
-        - name: Remove old Forge jars
+        - name: Remove old Forge and Fabric jars
           when: mc_pack_have != '' and mc_pack_id != mc_pack_have
-          ansible.builtin.shell: rm -f forge-*.jar
+          ansible.builtin.shell: rm -f forge-*.jar fabric-server-*.jar
           args:
             chdir: "{{ mc_home }}/server"
           changed_when: false
@@ -196,6 +196,7 @@
           environment:
             SPEC: "{{ mc_modpack.pack }}"
             VER: "{{ mc_modpack.version | default('') }}"
+            FORCE: "{{ mc_force_mods | join('\n') }}"
           ansible.builtin.shell:
             cmd: |
               set -eu
@@ -250,7 +251,29 @@
                   if [ -f run.sh ]; then sf=run.sh; else sf=$(ls forge-*.jar | head -1); fi
                   "$MRPACK" ./pack.mrpack --server-dir . --server-file "$sf"
               else
-                  "$MRPACK" ./pack.mrpack --server-dir .
+                  # Fabric/Quilt/vanilla: pin the file name, mrpack-install otherwise
+                  # picks fabric-server-mc.<mc>-loader.<x>-launcher.<y>.jar.
+                  "$MRPACK" ./pack.mrpack --server-dir . --server-file server.jar
+              fi
+              # Mods the pack marks client-only (mrpack-install skips them) that the
+              # server needs anyway, e.g. a library another mod depends on.
+              if [ -n "${FORCE:-}" ]; then
+                  python3 - ./pack.mrpack <<'PY'
+              import fnmatch, hashlib, json, os, sys, urllib.request, zipfile
+              index = json.loads(zipfile.ZipFile(sys.argv[1]).read("modrinth.index.json"))
+              globs = os.environ["FORCE"].split()
+              for f in index["files"]:
+                  name = os.path.basename(f["path"])
+                  if not any(fnmatch.fnmatch(name, g) for g in globs):
+                      continue
+                  data = urllib.request.urlopen(urllib.request.Request(
+                      f["downloads"][0], headers={"User-Agent": "vanguard-ansible/1.0"})).read()
+                  if hashlib.sha512(data).hexdigest() != f["hashes"]["sha512"]:
+                      sys.exit("sha512 mismatch for " + name)
+                  os.makedirs(os.path.dirname(f["path"]), exist_ok=True)
+                  open(f["path"], "wb").write(data)
+                  print("Forced:", f["path"])
+              PY
               fi
               rm -f pack.mrpack
 

@@ -25,6 +25,7 @@ Defaults live in `group_vars/minecraft.yml`; override per host in `host_vars/<cl
 | `mc_op_level` | `4` | | permission level 1-4 given to every name in `mc_ops` |
 | `mc_properties` | `{}` | | any other `server.properties` keys, e.g. `difficulty: hard`; booleans become `true`/`false` |
 | `mc_remove_mods` | `[]` | | mod file globs deleted from `server/mods` on every run (client-only mods) |
+| `mc_force_mods` | `[]` | | mod file globs the Modrinth pack flags client-only but the server needs (`Mod X requires ... which is missing`); changing the list reinstalls the pack |
 | `mc_launch` | *(auto)* | | force a specific server jar |
 | `mc_eula` | `false` | **yes → true** | accept https://aka.ms/MinecraftEULA |
 | `mc_modpack` | `{}` | **yes** | see below |

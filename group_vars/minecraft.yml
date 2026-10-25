@@ -89,6 +89,14 @@ mc_modpack: {}
 #     - "figura-*.jar"
 mc_remove_mods: []
 
+# The opposite: mods the Modrinth pack flags as client-only, so they are skipped,
+# but the server needs anyway (Fabric then fails with "Mod X requires version Y
+# of Z, which is missing!"). Shell globs on the file name, installed straight
+# from the pack's own download list (sha512 checked). Modrinth packs only.
+#   mc_force_mods:
+#     - "athena-fabric-*.jar"
+mc_force_mods: []
+
 # Pretty name for the login greetings; derived from mc_modpack.
 mc_pack_name: >-
   {{ ('vanilla ' ~ mc_modpack.version) if mc_modpack.source | default('') == 'vanilla'
