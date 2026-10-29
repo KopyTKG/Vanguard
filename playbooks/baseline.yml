@@ -1,7 +1,7 @@
 ---
 # The shared baseline every client gets. Run: `just baseline`
 - name: Baseline
-  hosts: all
+  hosts: all:!proxmox
   become: true
 
   tasks:
@@ -79,8 +79,46 @@
         create: true
         mode: "0644"
 
+    - name: Run fastfetch in interactive fish
+      ansible.builtin.lineinfile:
+        path: /root/.config/fish/config.fish
+        line: "status is-interactive; and fastfetch"
+        create: true
+        mode: "0644"
+
+    - name: Strip the stock Debian login banner for root
+      ansible.builtin.include_tasks: tasks/quiet-login.yml
+      vars:
+        quiet_login_homes: ["/root"]
+
+    - name: Ensure fish functions dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/functions
+        state: directory
+        mode: "0755"
+
+    # force: false so an app playbook's how-to greeting is never overwritten.
+    - name: Silence the fish greeting unless an app playbook set one
+      ansible.builtin.copy:
+        dest: /root/.config/fish/functions/fish_greeting.fish
+        content: "function fish_greeting; end"
+        force: false
+        mode: "0644"
+
     - name: Install the baseline vim config
       ansible.builtin.copy:
         src: files/vimrc
         dest: /root/.vimrc
+        mode: "0644"
+
+    - name: Ensure fastfetch config dir for root
+      ansible.builtin.file:
+        path: /root/.config/fastfetch
+        state: directory
+        mode: "0755"
+
+    - name: Install the baseline fastfetch config
+      ansible.builtin.copy:
+        src: files/fastfetch.jsonc
+        dest: /root/.config/fastfetch/config.jsonc
         mode: "0644"

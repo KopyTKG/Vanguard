@@ -2,7 +2,7 @@
 # One-off cleanup: remove the kopy user and chrony that earlier runs added.
 # Run: `ansible-playbook playbooks/cleanup.yml`
 - name: Remove kopy user and chrony
-  hosts: all
+  hosts: all:!proxmox
   become: true
 
   tasks:

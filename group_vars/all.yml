@@ -17,6 +17,7 @@ baseline_packages:
   - unattended-upgrades
   - fish
   - tmux
+  - fastfetch
   - isc-dhcp-client
   - zip
   - unzip

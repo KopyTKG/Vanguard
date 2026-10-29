@@ -1,0 +1,7 @@
+---
+# Vars for the `proxmox` group. Consumed by playbooks/proxmox.yml.
+proxmox_packages:
+  - vim
+  - fish
+  - tmux
+  - fastfetch

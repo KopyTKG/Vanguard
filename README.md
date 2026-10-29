@@ -19,6 +19,7 @@ group_vars/
   steamcmd.yml           vars for the `steamcmd` group (steam user, deps)
   foundryvtt.yml         vars for the `foundryvtt` group (foundry user, version default)
   minecraft.yml          vars + documented defaults for the `minecraft` group
+  proxmox.yml            vars for the `proxmox` group (host packages)
 host_vars/
   palworld.yml           which game(s) that client installs
   <client>.yml           per-client: foundry_version, or mc_* settings
@@ -31,6 +32,7 @@ playbooks/
   foundry.yml            installs the FoundryVTT launcher
   minecraft.yml          installs a modpack Minecraft server
   tasks/quiet-login.yml  shared: strips the stock Debian login banner
+  proxmox.yml            the Proxmox host: fish, fastfetch, vim (not in baseline)
   templates/             files rendered onto the clients
   site.yml               baseline + every group
 mise.toml / justfile     tooling + task shortcuts

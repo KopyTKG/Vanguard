@@ -1,0 +1,73 @@
+---
+# The Proxmox host itself. Run: `just install proxmox`
+# Kept out of baseline.yml on purpose: that one sets the hostname, dist-upgrades
+# and enables unattended-upgrades, none of which belong on a hypervisor. This
+# only carries the shell/editor niceties.
+- name: Set up the Proxmox host
+  hosts: proxmox
+  become: true
+
+  tasks:
+    - name: Install Proxmox host packages
+      ansible.builtin.apt:
+        name: "{{ proxmox_packages }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Ensure fish is a valid login shell
+      ansible.builtin.lineinfile:
+        path: /etc/shells
+        line: /usr/bin/fish
+
+    - name: Set fish as root's default shell
+      ansible.builtin.user:
+        name: root
+        shell: /usr/bin/fish
+
+    - name: Ensure fish and fastfetch config dirs for root
+      ansible.builtin.file:
+        path: "/root/.config/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - fish
+        - fastfetch
+
+    - name: Run fastfetch in interactive fish
+      ansible.builtin.lineinfile:
+        path: /root/.config/fish/config.fish
+        line: "status is-interactive; and fastfetch"
+        create: true
+        mode: "0644"
+
+    - name: Strip the stock Debian login banner for root
+      ansible.builtin.include_tasks: tasks/quiet-login.yml
+      vars:
+        quiet_login_homes: ["/root"]
+
+    - name: Ensure fish functions dir for root
+      ansible.builtin.file:
+        path: /root/.config/fish/functions
+        state: directory
+        mode: "0755"
+
+    # force: false so an app playbook's how-to greeting is never overwritten.
+    - name: Silence the fish greeting unless an app playbook set one
+      ansible.builtin.copy:
+        dest: /root/.config/fish/functions/fish_greeting.fish
+        content: "function fish_greeting; end"
+        force: false
+        mode: "0644"
+
+    - name: Install the baseline fastfetch config
+      ansible.builtin.copy:
+        src: files/fastfetch.jsonc
+        dest: /root/.config/fastfetch/config.jsonc
+        mode: "0644"
+
+    - name: Install the baseline vim config
+      ansible.builtin.copy:
+        src: files/vimrc
+        dest: /root/.vimrc
+        mode: "0644"

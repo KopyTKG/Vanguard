@@ -13,6 +13,12 @@ generic:
     proxy: { ansible_port: 2207 }
     jenkins: { ansible_port: 2208 }
 
+# The hypervisor itself, not an LXC client: plain SSH on 22, and excluded from
+# baseline/cleanup (playbooks/proxmox.yml covers it). Port is an assumption.
+proxmox:
+  hosts:
+    pve: { ansible_port: 22 }
+
 steamcmd:
   hosts:
     avorion: { ansible_port: 2209 } # steam_games slug: avorion (host_vars/avorion.yml)
@@ -28,12 +34,12 @@ minecraft:
 
 web:
   hosts:
-    worldle-web: { ansible_port: 2203 }
+    #worldle-web: { ansible_port: 2203 }
 
 csharp:
   hosts:
-    worldle-api: { ansible_port: 2202 }
+    #worldle-api: { ansible_port: 2202 }
 
 postgress:
   hosts:
-    worldle-db: { ansible_port: 2201 }
+    #worldle-db: { ansible_port: 2201 }

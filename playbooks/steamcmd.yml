@@ -137,10 +137,29 @@
             dest: "{{ steam_home }}/.config/fish/functions/fish_greeting.fish"
             mode: "0644"
 
+        - name: Run fastfetch in interactive fish
+          ansible.builtin.lineinfile:
+            path: "{{ steam_home }}/.config/fish/config.fish"
+            line: "status is-interactive; and fastfetch"
+            create: true
+            mode: "0644"
+
         - name: Install the baseline vim config for steam
           ansible.builtin.copy:
             src: files/vimrc
             dest: "{{ steam_home }}/.vimrc"
+            mode: "0644"
+
+        - name: Ensure fastfetch config dir for steam
+          ansible.builtin.file:
+            path: "{{ steam_home }}/.config/fastfetch"
+            state: directory
+            mode: "0755"
+
+        - name: Install the baseline fastfetch config for steam
+          ansible.builtin.copy:
+            src: files/fastfetch.jsonc
+            dest: "{{ steam_home }}/.config/fastfetch/config.jsonc"
             mode: "0644"
 
         - name: Create the SteamCMD directory
