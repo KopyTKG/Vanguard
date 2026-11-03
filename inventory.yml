@@ -9,6 +9,7 @@ generic:
   hosts:
     esl: { ansible_port: 2225 }
     ts-server: { ansible_port: 2200 }
+    cve: { ansible_port: 2205 }
     grafana: { ansible_port: 2206 }
     proxy: { ansible_port: 2207 }
     jenkins: { ansible_port: 2208 }
