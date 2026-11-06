@@ -22,7 +22,7 @@ DIR=$FOUNDRY_ROOT
 # Resolved at run time so the *global* mise node is used (no config in $DIR,
 # so mise falls back to the global version). Version bumps need no edit here.
 export PATH="$ROOT/.local/bin:$ROOT/.local/share/mise/shims:$PATH"
-RUNNER=$(eval mise which node)
+RUNNER=$(eval mise which node 2>/dev/null) || RUNNER=
 
 # Helpers usable inside the hooks:
 #   send <text>    type a line into the console
@@ -78,6 +78,7 @@ start() {
         exec tmux attach -t "$SESSION"
     fi
     [ -d "$DIR" ] || { echo "DIR does not exist: $DIR" >&2; exit 1; }
+    [ -x "$RUNNER" ] || { echo "No node found: 'mise which node' printed '$RUNNER' (HOME=$HOME). Run it as $(id -un) to see why; is the global node installed for this user?" >&2; exit 1; }
     [ -f "$TARGET" ] || { echo "TARGET does not exist: $TARGET" >&2; exit 1; }
     rm -f "$STOPFILE"
     mkdir -p "$LOGDIR"

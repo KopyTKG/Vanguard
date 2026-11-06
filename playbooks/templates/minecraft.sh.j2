@@ -22,7 +22,7 @@ LOGFILE_OLD=$LOGFILE.old                    # previous `start`'s log, kept for p
 # config in $DIR, so mise falls back to the global version). Forge/NeoForge's
 # run.sh calls plain `java`, so its directory goes on PATH too.
 export PATH="$ROOT/.local/bin:$ROOT/.local/share/mise/shims:$PATH"
-RUNNER=$(eval mise which java)
+RUNNER=$(eval mise which java 2>/dev/null) || RUNNER=
 export PATH="$(dirname "$RUNNER"):$PATH"
 
 # Helpers usable inside the hooks:
@@ -91,6 +91,7 @@ start() {
         exec tmux attach -t "$SESSION"
     fi
     [ -d "$DIR" ] || { echo "DIR does not exist: $DIR" >&2; exit 1; }
+    [ -x "$RUNNER" ] || { echo "No java found: 'mise which java' printed '$RUNNER' (HOME=$HOME). Run it as $(id -un) to see why; is the global java installed for this user?" >&2; exit 1; }
         rm -f "$STOPFILE"
     mkdir -p "$LOGDIR"
     [ -f "$LOGFILE" ] && mv -f "$LOGFILE" "$LOGFILE_OLD"

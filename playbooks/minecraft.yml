@@ -109,6 +109,19 @@
           register: mise_java
           changed_when: "'install' in mise_java.stderr"
 
+        # `mise use` can record the version in the global config without actually
+        # installing it, so install explicitly and then prove a java binary exists.
+        - name: Install the Java the global config asks for
+          ansible.builtin.command: mise install
+          environment:
+            MISE_YES: "1"
+          register: mise_java_install
+          changed_when: "'install' in mise_java_install.stderr"
+
+        - name: Check that mise resolves a java binary
+          ansible.builtin.command: mise which java
+          changed_when: false
+
         - name: Create the server directory
           ansible.builtin.file:
             path: "{{ mc_home }}/server"

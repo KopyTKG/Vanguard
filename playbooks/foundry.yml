@@ -89,11 +89,24 @@
         # `lts` tracks the newest LTS line, so a re-run after a new LTS ships
         # moves the global version forward.
         - name: Install latest Node.js LTS and set it as the global version
-          ansible.builtin.command: mise use --global node@lts
+          ansible.builtin.command: mise use --global node@{{ foundry_node }}
           environment:
             MISE_YES: "1"
           register: mise_node
           changed_when: "'node@' in mise_node.stdout or 'install' in mise_node.stderr"
+
+        # `mise use` can record the version in the global config without actually
+        # installing it, so install explicitly and then prove a node binary exists.
+        - name: Install the Node.js the global config asks for
+          ansible.builtin.command: mise install
+          environment:
+            MISE_YES: "1"
+          register: mise_node_install
+          changed_when: "'install' in mise_node_install.stderr"
+
+        - name: Check that mise resolves a node binary
+          ansible.builtin.command: mise which node
+          changed_when: false
 
     - name: Template the launcher script
       ansible.builtin.template:
